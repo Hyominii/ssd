@@ -15,8 +15,8 @@ class TestShellApp:
         pass
 
     def help(self):
-        print(f"팀명: BestReviewer")
-        print(f"팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈")
+        print("팀명: BestReviewer")
+        print("팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈")
         print("사용 가능한 명령어:")
         print("  write <LBA> <Value>      : 특정 LBA에 값 저장")
         print("  read <LBA>               : 특정 LBA 값 읽기")
