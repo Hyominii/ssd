@@ -9,19 +9,32 @@ def shell_app():
     return test_shell_app
 
 
-def test_shell_write():
-    #Arrange
+def test_shell_write(mocker: MockerFixture):
+    # Arrange
     app = TestShellApp()
+    mock_run_ssd_write = mocker.patch('test_shell.SSDDriver.run_ssd_write')
+    mock_run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
-    #Act
-    ret = app.write(address = 0, value = 0 )
+    # Act
+    ret = app.write(address=0, value=0)
 
-    #Assert
-    assert ret == 0
+    # Assert
+    assert ret == TestShellApp.WRITE_SUCCESS
+    mock_run_ssd_write.assert_called_once()
 
 
-def test_shell_write_subprocess():
-    pass
+def test_shell_write_subprocess(mocker: MockerFixture):
+    # Arrange
+    app = TestShellApp()
+    mock_run_ssd_write = mocker.patch('test_shell.SSDDriver.run_ssd_write')
+    mock_run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+
+    # Act
+    ret = app.write(address=0, value=0)
+
+    # Assert
+    assert ret == TestShellApp.WRITE_SUCCESS
+    mock_run_ssd_write.assert_called_once()
 
 
 def test_shell_write_wrong_address():
