@@ -57,7 +57,7 @@ def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, input, capsys):
     assert 'INVALID COMMAND' in captured.out
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_shell_wrong_cmd_empty(shell_app, mocker: MockerFixture, capsys):
     mocker.patch("builtins.input", side_effect=[""])
 
