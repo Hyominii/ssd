@@ -2,6 +2,10 @@ import shlex
 
 
 class TestShellApp:
+    SUCCESS = 0
+    WRITE_SUCCESS = SUCCESS
+    WRITE_ERROR = -1
+
     def read(self, address: int):
         pass
 
@@ -9,7 +13,7 @@ class TestShellApp:
         pass
 
     def write(self, address: int, value: str):
-        pass
+        return TestShellApp.WRITE_SUCCESS
 
     def full_write(self, value: str):
         pass
