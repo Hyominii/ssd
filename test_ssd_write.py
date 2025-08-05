@@ -2,11 +2,11 @@ import pytest
 import pytest_mock
 
 from ssd import SSD
-from ssd import READ_FILE, WRITE_FILE
+from ssd import OUTPUT_FILE, TARGET_FILE, ERROR_STRING
 
 
 def read_ssd_output_txt() -> str:
-    with open(WRITE_FILE, 'r', encoding='utf-8') as f:
+    with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
         return f.readline().strip()
 
 
