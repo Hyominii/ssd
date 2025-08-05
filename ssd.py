@@ -34,7 +34,8 @@ class SSD:
 
 
     def write(self, address: str, value: str) -> None:
-        with open(OUTPUT_FILE, 'w') as f:
-            f.write('ERROR')
+        if not address.isdigit():
+            with open(OUTPUT_FILE, 'w') as f:
+                f.write('ERROR')
         return
 
