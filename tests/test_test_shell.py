@@ -1,6 +1,6 @@
 import pytest
 
-from ssd.test_shell import TestShellApp
+from test_shell import TestShellApp
 
 
 def test_shell_write():
