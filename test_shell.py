@@ -25,7 +25,9 @@ class TestShellApp:
         self._ssd_driver = ssd_driver
 
     def read(self, address: int):
-        pass
+        result = self._ssd.read(address) #TODO ssd_output.txt 생성 후 수정 필요
+        address = "0" + str(address) #TODO addr이 1자리수, 2자리수 포함한 일반화 필요
+        print(f'[Read] LBA {address} : {result}')
 
     def full_read(self):
         pass

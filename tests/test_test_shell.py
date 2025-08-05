@@ -54,6 +54,12 @@ def test_shell_write_short_number():
 
 
 def test_shell_read():
+    shell = TestShellApp()
+    lba = "00"
+    shell.read(lba)
+    ssd_result = "0x00000000"
+    print('\n')
+    print(f'[Read] LBA {lba} : {ssd_result}')
     pass
 
 
