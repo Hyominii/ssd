@@ -15,7 +15,7 @@ class TestShellApp:
         pass
 
     def exit(self):
-        exit(0)
+        pass
 
     def help(self):
         print("팀명: BestReviewer")
