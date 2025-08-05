@@ -37,6 +37,9 @@ class TestShellApp:
                     break
                 max_iterations -= 1
             command = input("Shell > ").strip()
+            if not command:
+                self.print_invalid_command()
+                continue
             parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
             cmd_name, *cmd_args = parts
             if self.is_validate_command(cmd_name, cmd_args):
