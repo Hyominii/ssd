@@ -13,10 +13,12 @@ class SSD:
         pass
 
     def init_file(self, filename: str):
+        # BLANK_VALUE = "0x00000000"
         # 파일이 없으면 새로 생성
+        # 100칸이 있어야 하므로 100개의 BLANCK VALUE 생성
         if not os.path.exists(filename):
             with open(filename, "w") as f:
-                f.write("")  # 빈 파일로 생성
+                [f.write("0x00000000"+"\n") for _ in range(100)]
         return
 
     def read(self, address: int) -> int:
@@ -45,7 +47,7 @@ class SSD:
         while len(lines) < address:
             lines.append("\n")
 
-        lines[address] = str + "\n"
+        lines[address] = value + "\n"
 
         with open(TARGET_FILE, "w") as f:
             f.writelines(lines)
