@@ -4,18 +4,18 @@ from pytest_mock import MockerFixture
 from ssd import SSD
 import os
 
-BLANK_VALUE = "0x00000000"
+# BLANK_VALUE = "0x00000000"
 TEST_VALUE = "0x01234567"
 ERROR_VALUE = "ERROR"
 TARGET_FILE = 'ssd_output.txt'
 WRITE_FILE = 'ssd_nand.txt'
 
-def get_output_file():
+def get_output_file() -> str:
     with open(TARGET_FILE, "r", encoding="utf-8") as f:
         content_string = f.read()
-    return content_string
+    return content_string.rstrip("\n")
 
-def write_output_file(content: str):
+def write_output_file(content: str) -> None:
     with open(TARGET_FILE, "w") as f:
         f.write(content + "\n")
 
@@ -38,10 +38,16 @@ def test_write_file_exist():
     os.remove(WRITE_FILE)
 
 
-def test_read_success():
+def test_read_success_lba0():
     ssd = SSD()
-    write_output_file(TEST_VALUE)
+    ssd.write(0, TEST_VALUE)
     ssd.read(0)
+    assert get_output_file() == TEST_VALUE
+
+def test_read_success_lba99():
+    ssd = SSD()
+    ssd.write(99, TEST_VALUE)
+    ssd.read(99)
     assert get_output_file() == TEST_VALUE
 
 def test_read_blank_success():
