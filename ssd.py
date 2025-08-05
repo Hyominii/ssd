@@ -8,7 +8,7 @@ class SSD:
     def __init__(self):
         pass
 
-    def get_file(filename: str):
+    def get_file(self, filename: str):
         # 파일이 없으면 새로 생성
         if not os.path.exists(filename):
             with open(filename, "w") as f:
