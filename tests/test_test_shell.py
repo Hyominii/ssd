@@ -10,7 +10,14 @@ def shell_app():
 
 
 def test_shell_write():
-    pass
+    #Arrange
+    app = TestShellApp()
+
+    #Act
+    ret = app.write(address = 0, value = 0 )
+
+    #Assert
+    assert ret == 0
 
 
 def test_shell_write_subprocess():
