@@ -6,6 +6,7 @@ TARGET_FILE = 'ssd_nand.txt'
 
 ERROR_STRING = 'ERROR'
 
+
 class SSD:
     def __init__(self):
         self.init_file(OUTPUT_FILE)
@@ -32,21 +33,13 @@ class SSD:
         return 0
 
 
-    def write(self, address: int, value: str) -> int:
+    def write(self, address: str, value: str) -> None:
+        # f = self.get_file(WRITE_FILE)
 
-        if address < 0 or address > 100:
-            with open(OUTPUT_FILE, "w") as f:
-                f.write(ERROR_STRING + "\n")
+        if not address.isdigit():
+            with open(WRITE_FILE, 'w') as f:
+                f.write('ERROR')
+        return
 
-        with open(TARGET_FILE, "r") as f:
-            lines = f.readlines()
-
-        # 줄이 address 줄보다 적으면 빈 줄로 채움
-        while len(lines) < address:
-            lines.append("\n")
-
-        lines[address] = str + "\n"
-
-        with open(TARGET_FILE, "w") as f:
-            f.writelines(lines)
+        f = self.get_file(WRITE_FILE)
         return 0
