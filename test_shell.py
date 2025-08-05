@@ -1,4 +1,16 @@
 import shlex
+import subprocess
+
+
+class SSDDriver:
+    def run_ssd_write(self, address: int, value: str):
+        command = ['python', 'ssd.py', str(address), str(value)]
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            return self.WRITE_SUCCESS
+        else:
+            return self.WRITE_ERROR
 
 
 class TestShellApp:
@@ -13,7 +25,8 @@ class TestShellApp:
         pass
 
     def write(self, address: int, value: str):
-        return TestShellApp.WRITE_SUCCESS
+        ret = SSDDriver.run_ssd_write(address, value)
+        return ret
 
     def full_write(self, value: str):
         pass
