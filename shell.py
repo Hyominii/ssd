@@ -125,44 +125,45 @@ class TestShellApp:
                     break
                 max_iterations -= 1
             command = input("Shell > ").strip()
-            if not command:
+            if self.is_valid_command(command) == False:
                 self.print_invalid_command()
                 continue
+
             parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
             cmd_name, *cmd_args = parts
-            if self.is_validate_command(cmd_name, cmd_args):
-                if cmd_name == "exit":
-                    self.exit()
-                elif cmd_name == "help":
-                    self.help()
-                elif cmd_name == "write":
-                    self.write(cmd_args[0], cmd_args[1])
-                elif cmd_name == "read":
-                    self.read(cmd_args[0])
-                elif cmd_name == "fullwrite":
-                    self.full_write(cmd_args[0])
-                elif cmd_name == "fullread":
-                    self.full_read()
-                else:
-                    self.print_invalid_command()
+            if cmd_name == "exit":
+                self.exit()
+            elif cmd_name == "help":
+                self.help()
+            elif cmd_name == "write":
+                self.write(cmd_args[0], cmd_args[1])
+            elif cmd_name == "read":
+                self.read(cmd_args[0])
+            elif cmd_name == "fullwrite":
+                self.full_write(cmd_args[0])
+            elif cmd_name == "fullread":
+                self.full_read()
 
-    def is_validate_command(self, cmd_name, cmd_args):
+    def is_valid_command(self, command):
+        if not command:
+            return False
+
+        parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
+        cmd_name, *cmd_args = parts
         if cmd_name == "exit" or cmd_name == "help" or cmd_name == "fullread":
             if len(cmd_args) > 0:
-                self.print_invalid_command()
                 return False
         elif cmd_name == "write":
             if len(cmd_args) != 2:
-                self.print_invalid_command()
                 return False
         elif cmd_name == "read":
             if len(cmd_args) != 1:
-                self.print_invalid_command()
                 return False
         elif cmd_name == "fullwrite":
             if len(cmd_args) != 1:
-                self.print_invalid_command()
                 return False
+        else:
+            return False
 
         return True
 
