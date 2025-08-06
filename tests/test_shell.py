@@ -279,87 +279,70 @@ def test_shell_help(capsys):
 
 def test_shell_full_read(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_read.side_effect = [0] * 100
-    test_shell_app._ssd_driver.get_ssd_output.side_effect = ["0x00000000"] * 100
+    shell_app._ssd_driver.run_ssd_read.side_effect = [0] * 100
+    shell_app._ssd_driver.get_ssd_output.side_effect = ["0x00000000"] * 100
 
     # Act
-    ret = test_shell_app.full_read()
+    ret = shell_app.full_read()
     captured = capsys.readouterr()
     assert ret == READ_SUCCESS
-    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 100
+    assert shell_app._ssd_driver.run_ssd_read.call_count == 100
 
 
 def test_shell_full_write(shell_app, mocker: MockerFixture):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 100
+    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 100
 
     # Act
-    ret = test_shell_app.full_write(value=0)
+    ret = shell_app.full_write(value="0x12345678")
 
     # Assert
     assert ret == WRITE_SUCCESS
-
-    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 100
-
+    assert shell_app._ssd_driver.run_ssd_write.call_count == 100
 
 def test_shell_full_write_wrong_format():
     pass
 
 def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 100
-    test_shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 100
-    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 100
+    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 100
+    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
     # Act
-    test_shell_app.full_write_and_read_compare()
+    shell_app.full_write_and_read_compare()
 
     # Assert
     assert "PASS" in capsys.readouterr().out
 
-    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 100
-    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 100
+    assert shell_app._ssd_driver.run_ssd_write.call_count == 100
+    assert shell_app._ssd_driver.run_ssd_read.call_count == 100
 
 def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 150
-    test_shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 150
-    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 150
+    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 150
+    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
 
     # Act
-    test_shell_app.partial_lba_write()
+    shell_app.partial_lba_write()
 
     # Assert
     assert "PASS" in capsys.readouterr().out
 
-    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 150
-    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 150
+    assert shell_app._ssd_driver.run_ssd_write.call_count == 150
+    assert shell_app._ssd_driver.run_ssd_read.call_count == 150
 
 def test_shell_write_read_aging(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 400
-    test_shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 400
-    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 400
+    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 400
+    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
 
     # Act
-    test_shell_app.write_read_aging()
+    shell_app.write_read_aging()
 
     # Assert
     assert "PASS" in capsys.readouterr().out
 
-    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 400
-    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 400
+    assert shell_app._ssd_driver.run_ssd_write.call_count == 400
+    assert shell_app._ssd_driver.run_ssd_read.call_count == 400
