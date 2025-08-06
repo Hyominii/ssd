@@ -53,11 +53,33 @@ class TestShellApp:
     def full_read(self):
         pass
 
+    def format_hex_value(self, value: str) -> str | None:
+        if not value.startswith('0x'): # str 시작이 0x로 시작되어야함
+            return None
+
+        #값의 범위를 체크함
+        hex_str = value[2:]
+
+        try:
+            int_value = int(hex_str, 16)
+        except ValueError:
+            return None
+
+        if not (0 <= int_value <= 0xFFFFFFFF):
+            return None
+
+        return f'0x{int_value:08X}'
+
     def write(self, address: int, value: str):
-        if address < 0 or address >99 or not isinstance(address, int):
+        if address < 0 or address > 99 or not isinstance(address, int):
             return self.WRITE_ERROR
 
-        ret = self._ssd_driver.run_ssd_write(address = address, value = value)
+        formatted_value = self.format_hex_value(value)
+
+        if formatted_value == None:
+            return self.WRITE_ERROR
+
+        ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
         return ret
 
     def full_write(self, value: str):
