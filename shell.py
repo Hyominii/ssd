@@ -1,8 +1,6 @@
 import shlex
 import subprocess
 
-from matplotlib.dates import TUESDAY
-
 SUCCESS = 0
 ERROR = -1
 WRITE_SUCCESS = SUCCESS
@@ -53,6 +51,10 @@ class TestShellApp:
             "write": (2, lambda args: self.write(args[0], args[1])),
             "read": (1, lambda args: self.read(args[0])),
             "fullwrite": (1, lambda args: self.full_write(args[0])),
+            "1_": (0, lambda: self.full_write_and_read_compare()),
+            "1_FullWriteAndReadCompare": (0, lambda: self.full_write_and_read_compare()),
+            "2_": (0, lambda: self.partial_lba_write()),
+            "2_PartialLBAWrite”": (0, lambda: self.partial_lba_write()),
         }
 
     def is_address_valid(self, address: str):
