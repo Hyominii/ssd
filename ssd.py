@@ -88,7 +88,6 @@ class SSD:
         lines = self._read_lines()
         lines[address] = value
         self._write_lines(lines)
-        self._write_output(value)
 
     def _write_output(self, content: str):
         with open(OUTPUT_FILE, 'w') as f:
