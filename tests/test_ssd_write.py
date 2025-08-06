@@ -43,3 +43,18 @@ def test_write_valid_address(ssd, addr):
 
     # assert
     assert read_target()[addr] == value
+
+
+@pytest.mark.parametrize("value", [
+    '0x00000001',
+    '0x12345678',
+    '0x7FFFFFFF',
+    '0xFFFFFFFF',
+])
+def test_write_valid_values(ssd, value):
+    # arrange and act
+    addr = 19
+    ssd.write(addr, value)
+
+    # assert
+    assert read_target()[addr] == value
