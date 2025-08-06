@@ -145,6 +145,7 @@ class TestShellApp:
                     print("FAIL")
                     raise SystemExit(1)
         print("PASS")
+        return SUCCESS
 
     def partial_lba_write(self):
         for iter in range(30):
@@ -158,6 +159,7 @@ class TestShellApp:
                     print("FAIL")
                     raise SystemExit(1)
         print("PASS")
+        return SUCCESS
 
     def write_read_aging(self):
         for iter in range(200):
@@ -173,6 +175,7 @@ class TestShellApp:
                 print("FAIL")
                 raise SystemExit(1)
         print("PASS")
+        return SUCCESS
 
     def exit(self):
         raise SystemExit(0)
