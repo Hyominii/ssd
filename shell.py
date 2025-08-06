@@ -103,6 +103,54 @@ class TestShellApp:
                 return WRITE_ERROR
         return WRITE_SUCCESS
 
+    def _read_and_compare(self, address: str, written_value: str):
+        read_status = self.read(address)
+        if read_status != READ_SUCCESS:
+            return False
+
+        read_value = self._ssd_driver.get_ssd_output()
+        if read_value != written_value:
+            return False
+
+        return True
+
+    def full_write_and_read_compare(self):
+        for block in range(0, 100, 5):
+            write_value = "0x12345678"
+            for address in range(block, block + 5):
+                self.write(str(address), write_value)
+            for address in range(block, block + 5):
+                if self._read_and_compare(str(address), write_value) == False:
+                    print("FAIL")
+                    raise SystemExit(1)
+        print("PASS")
+
+    def partial_lba_write(self):
+        for iter in range(30):
+            self.write("4", "0x12345678")
+            self.write("0", "0x12345678")
+            self.write("3", "0x12345678")
+            self.write("1", "0x12345678")
+            self.write("2", "0x12345678")
+            for address in range(0, 5):
+                if self._read_and_compare(str(address), "0x12345678") == False:
+                    print("FAIL")
+                    raise SystemExit(1)
+        print("PASS")
+
+    def write_read_aging(self):
+        for iter in range(200):
+            self.write("0", "0x12345678")
+            self.write("99", "0x12345678")
+
+            if self._read_and_compare("0", "0x12345678") == False:
+                print("FAIL")
+                raise SystemExit(1)
+            if self._read_and_compare("99", "0x12345678") == False:
+                print("FAIL")
+                raise SystemExit(1)
+        print("PASS")
+
     def exit(self):
         raise SystemExit(0)
 
