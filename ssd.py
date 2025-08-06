@@ -33,10 +33,11 @@ class SSD:
         return
 
     def read(self, address: int) -> int:
-        if not isinstance(address, (int, float)):
+        if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
             with open(OUTPUT_FILE, "w") as f:
                 f.write(ERROR_STRING)
             return 1
+
         if (address < 0 or address >= 100):
             with open(OUTPUT_FILE, "w") as f:
                 f.write(ERROR_STRING)
@@ -45,9 +46,28 @@ class SSD:
         with open(TARGET_FILE, "r") as f:
             lines = f.readlines()
 
+        read_value = lines[address].rstrip("\n")
+        MIN_VALUE = 0x00000000
+        MAX_VALUE = 0xFFFFFFFF
+        if not read_value.startswith(('0x', '0X')) or len(read_value)!=10:
+            with open(OUTPUT_FILE, "w") as f:
+                f.write(ERROR_STRING)
+            return 1
+        try:
+            read_value_hex = int(read_value, 16)
+        except ValueError:
+            with open(OUTPUT_FILE, "w") as f:
+                f.write(ERROR_STRING)
+            return 1
+
+        if read_value_hex < MIN_VALUE  or read_value_hex > MAX_VALUE:
+            with open(OUTPUT_FILE, "w") as f:
+                f.write(ERROR_STRING)
+            return 1
+
         if len(lines) >= address:
             with open(OUTPUT_FILE, "w") as f:
-                f.write(lines[address].rstrip("\n"))
+                f.write(read_value)
         else:
             with open(OUTPUT_FILE, "w") as f:
                 f.write(ERROR_STRING)

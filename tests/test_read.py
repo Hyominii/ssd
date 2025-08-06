@@ -35,12 +35,11 @@ def test_read_file_exist():
     assert not os.path.exists(TARGET_FILE)
     ssd = SSD()
     ssd.read(0)
-    # print(TARGET_FILE)
     assert os.path.exists(TARGET_FILE)
     os.remove(TARGET_FILE)
 
 
-def test_write_file_exist(tmp_path):
+def test_write_file_exist():
     if os.path.exists(TARGET_FILE):
         os.remove(TARGET_FILE)
     assert not os.path.exists(TARGET_FILE)
@@ -56,6 +55,19 @@ def test_read_success_lba0():
     ssd.read(0)
     assert get_output_file() == TEST_VALUE
 
+@pytest.mark.parametrize("valid_value", ["0x00000000", "0XFFFFFFFF", "0xabcdef00","0xAbC093fA"])
+def test_read_valid_value(valid_value):
+    ssd = SSD()
+    write_file(0, valid_value)
+    ssd.read(0)
+    assert get_output_file() == valid_value
+
+@pytest.mark.parametrize("invalid_value", ["0b00000000", "0x57", "231", "0x001100GG"])
+def test_read_invalid_value(invalid_value):
+    ssd = SSD()
+    write_file(0, invalid_value)
+    ssd.read(0)
+    assert get_output_file() == ERROR_STRING
 
 def test_read_success_lba99():
     ssd = SSD()
@@ -73,18 +85,14 @@ def test_read_blank_success():
     ssd.read(50)
     assert get_output_file() == BLANK_STRING
 
-
-def test_read_out_of_range_lba_error():
+@pytest.mark.parametrize("invalid_lba", [-1, -15, 100, 150])
+def test_read_out_of_range_lba_error(invalid_lba):
     ssd = SSD()
+    ssd.read(invalid_lba)
+    assert get_output_file() == ERROR_STRING
 
-    for invalid_lba in [-1, -15, 100, 150]:
-        ssd.read(invalid_lba)
-        assert get_output_file() == ERROR_STRING
-
-
-def test_read_invalid_lba_error():
+@pytest.mark.parametrize("invalid_lba", ['A', '10', '50', 'AAA'])
+def test_read_invalid_lba_error(invalid_lba):
     ssd = SSD()
-
-    for invalid_lba in ['A', '10', '50', 'AAA']:
-        ssd.read(invalid_lba)
-        assert get_output_file() == ERROR_STRING
+    ssd.read(invalid_lba)
+    assert get_output_file() == ERROR_STRING
