@@ -1,5 +1,6 @@
 import shlex
 import subprocess
+import random
 
 SUCCESS = 0
 ERROR = -1
@@ -55,6 +56,8 @@ class TestShellApp:
             "1_FullWriteAndReadCompare": (0, lambda: self.full_write_and_read_compare()),
             "2_": (0, lambda: self.partial_lba_write()),
             "2_PartialLBAWrite”": (0, lambda: self.partial_lba_write()),
+            "3_": (0, lambda: self.write_read_aging()),
+            "3_WriteReadAging”": (0, lambda: self.write_read_aging()),
         }
 
     def is_address_valid(self, address: str):
@@ -158,13 +161,15 @@ class TestShellApp:
 
     def write_read_aging(self):
         for iter in range(200):
-            self.write("0", "0x12345678")
-            self.write("99", "0x12345678")
+            value = random.randint(0, 0xFFFFFFFF)
+            write_value = f"0x{value:08X}"
+            self.write("0", write_value)
+            self.write("99", write_value)
 
-            if self._read_and_compare("0", "0x12345678") == False:
+            if self._read_and_compare("0", write_value) == False:
                 print("FAIL")
                 raise SystemExit(1)
-            if self._read_and_compare("99", "0x12345678") == False:
+            if self._read_and_compare("99", write_value) == False:
                 print("FAIL")
                 raise SystemExit(1)
         print("PASS")
