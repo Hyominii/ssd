@@ -310,3 +310,56 @@ def test_shell_full_write(shell_app, mocker: MockerFixture):
 
 def test_shell_full_write_wrong_format():
     pass
+
+def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 100
+    test_shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 100
+    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+    # Act
+    test_shell_app.full_write_and_read_compare()
+
+    # Assert
+    assert "PASS" in capsys.readouterr().out
+
+    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 100
+    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 100
+
+def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 150
+    test_shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 150
+    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+
+    # Act
+    test_shell_app.partial_lba_write()
+
+    # Assert
+    assert "PASS" in capsys.readouterr().out
+
+    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 150
+    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 150
+
+def test_shell_write_read_aging(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 400
+    test_shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 400
+    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+
+    # Act
+    test_shell_app.write_read_aging()
+
+    # Assert
+    assert "PASS" in capsys.readouterr().out
+
+    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 400
+    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 400
