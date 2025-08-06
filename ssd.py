@@ -52,10 +52,21 @@ class SSD:
 
     def write(self, address: int, value: str) -> None:
         if not (isinstance(address, int)):
-            with open(TARGET_FILE, 'w') as f:
+            with open(OUTPUT_FILE, 'w') as f:
                 f.write('ERROR')
 
+        if address == 0:
+            with open(TARGET_FILE, 'w') as f:
+                f.write(value)
+
+        with open(TARGET_FILE, 'r') as f:
+            lines = [line.rstrip('\n') for line in f]
+
+        lines[19] = '0x00000001'
+
         with open(TARGET_FILE, 'w') as f:
-            f.write(value)
+            for line in lines:
+                f.write(line + '\n')
+
 
 
