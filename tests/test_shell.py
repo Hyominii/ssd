@@ -11,129 +11,104 @@ def shell_app(mocker):
     return test_shell_app
 
 
-def test_shell_write(mocker):
+def test_shell_write(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="0", value="0x00000000")
+    ret = shell_app.write(address="0", value="0x00000000")
 
     # Assert
     assert ret == TestShellApp.WRITE_SUCCESS
-    test_shell_app._ssd_driver.run_ssd_write.assert_called_once()
+    shell_app._ssd_driver.run_ssd_write.assert_called_once()
 
 
-def test_shell_write_subprocess(mocker):
+def test_shell_write_subprocess(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="0", value="0x00000000")
+    ret = shell_app.write(address="0", value="0x00000000")
 
     # Assert
     assert ret == TestShellApp.WRITE_SUCCESS
-    test_shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
+    shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
 
 
-def test_shell_write_wrong_address_small_address(mocker):
+def test_shell_write_wrong_address_small_address(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="-1", value="0x00000000")
+    ret = shell_app.write(address="-1", value="0x00000000")
 
     # Assert
     assert ret == TestShellApp.WRITE_ERROR
 
 
-def test_shell_write_wrong_address_big_address(mocker):
+def test_shell_write_wrong_address_big_address(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="100", value="0x00000000")
+    ret = shell_app.write(address="100", value="0x00000000")
 
     # Assert
     assert ret == TestShellApp.WRITE_ERROR
 
 
-def test_shell_write_wrong_address_float_address(mocker):
+def test_shell_write_wrong_address_float_address(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="0.5", value="0x00000000")
+    ret = shell_app.write(address="0.5", value="0x00000000")
 
     # Assert
     assert ret == TestShellApp.WRITE_ERROR
 
 
-def test_shell_write_wrong_data_format_big_number(mocker):
+def test_shell_write_wrong_data_format_big_number(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="0", value="0xAAAAAAAAAA")
+    ret = shell_app.write(address="0", value="0xAAAAAAAAAA")
 
     # Assert
     assert ret == TestShellApp.WRITE_ERROR
 
 
-def test_shell_write_short_number(mocker):
+def test_shell_write_short_number(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="0", value="0xAA")
+    ret = shell_app.write(address="0", value="0xAA")
 
     # Assert
     assert ret == TestShellApp.WRITE_SUCCESS
 
-def test_shell_write_wrong_format_data(mocker):
+def test_shell_write_wrong_format_data(shell_app):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address="0", value="123")
+    ret = shell_app.write(address="0", value="123")
 
     # Assert
     assert ret == TestShellApp.WRITE_ERROR
 
 def test_shell_read(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
-    test_shell_app = TestShellApp(ssd_driver_mock)
-
-    test_shell_app._ssd_driver.run_ssd_read.return_value = 0
-    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
+    shell_app._ssd_driver.run_ssd_read.return_value = 0
+    shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
 
     # Act
-    ret = test_shell_app.read(address=0)
+    ret = shell_app.read(address=0)
     captured = capsys.readouterr()
+
+    # Assert
     assert ret == TestShellApp.READ_SUCCESS
     assert '[Read] LBA 00 : 0x00000000' in captured.out
 
