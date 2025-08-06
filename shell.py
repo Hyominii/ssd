@@ -49,10 +49,10 @@ class TestShellApp:
             return False  # 유효한 범위(0~99)를 벗어난 경우
 
     def format_hex_value(self, value: str) -> str | None:
-        if not value.startswith('0x'): # str 시작이 0x로 시작되어야함
+        if not value.startswith('0x'):  # str 시작이 0x로 시작되어야함
             return None
 
-        #값의 범위를 체크함
+        # 값의 범위를 체크함
         hex_str = value[2:]
 
         try:
@@ -69,9 +69,9 @@ class TestShellApp:
         if not self.is_address_valid(address):
             return READ_ERROR
 
-        status = self._ssd_driver.run_ssd_read(address)
+        status = self._ssd_driver.run_ssd_read(address=address)
         ssd_output = self._ssd_driver.get_ssd_output()
-        print(f'[Read] LBA {address:02d} : {ssd_output}')
+        print(f'[Read] LBA {address.zfill(2)} : {ssd_output}')
         return status
 
     def full_read(self):
