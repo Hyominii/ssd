@@ -44,15 +44,6 @@ class TestShellApp:
 
         self._ssd_driver = ssd_driver
 
-    def read(self, address: str):
-        status = self._ssd_driver.run_ssd_read(address)
-        ssd_output = self._ssd_driver.get_ssd_output()
-        print(f'[Read] LBA {address:02d} : {ssd_output}')
-        return status
-
-    def full_read(self):
-        pass
-
     def is_address_valid(self, address: str):
         try:
             address_int = int(address)
@@ -81,12 +72,25 @@ class TestShellApp:
 
         return f'0x{int_value:08X}'
 
+    def read(self, address: str):
+        if not self.is_address_valid(address):
+            return self.READ_ERROR
+
+        status = self._ssd_driver.run_ssd_read(address)
+        ssd_output = self._ssd_driver.get_ssd_output()
+        print(f'[Read] LBA {address:02d} : {ssd_output}')
+        return status
+
+    def full_read(self):
+        pass
+
     def write(self, address: str, value: str):
         formatted_value = self.format_hex_value(value)
         if formatted_value == None or not self.is_address_valid(address):
             return self.WRITE_ERROR
 
         ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
+        print("[Write] Done")
         return ret
 
     def full_write(self, value: str):
