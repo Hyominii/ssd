@@ -54,7 +54,10 @@ class TestShellApp:
         pass
 
     def write(self, address: int, value: str):
-        ret = self._ssd_driver.run_ssd_write(address=address, value=value)
+        if address < 0 or address >99 or not isinstance(address, int):
+            return self.WRITE_ERROR
+
+        ret = self._ssd_driver.run_ssd_write(address = address, value = value)
         return ret
 
     def full_write(self, value: str):
