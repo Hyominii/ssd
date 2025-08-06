@@ -71,6 +71,8 @@ class TestShellApp:
             return READ_ERROR
 
         status = self._ssd_driver.run_ssd_read(address=address)
+        if status == READ_ERROR:
+            return status
         ssd_output = self._ssd_driver.get_ssd_output()
         print(f'[Read] LBA {address.zfill(2)} : {ssd_output}')
         return status
