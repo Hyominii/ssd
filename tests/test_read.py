@@ -35,7 +35,7 @@ def test_read_file_exist():
     assert not os.path.exists(TARGET_FILE)
     ssd = SSD()
     ssd.read(0)
-    #print(TARGET_FILE)
+    # print(TARGET_FILE)
     assert os.path.exists(TARGET_FILE)
     os.remove(TARGET_FILE)
 
@@ -74,19 +74,17 @@ def test_read_blank_success():
     assert get_output_file() == BLANK_STRING
 
 
-def test_read_lba_error():
+def test_read_out_of_range_lba_error():
     ssd = SSD()
-    ssd.read(-1)
-    assert get_output_file() == ERROR_STRING
-    ssd.read(-15)
-    assert get_output_file() == ERROR_STRING
-    ssd.read(100)
-    assert get_output_file() == ERROR_STRING
-    ssd.read(150)
-    assert get_output_file() == ERROR_STRING
+
+    for invalid_lba in [-1, -15, 100, 150]:
+        ssd.read(invalid_lba)
+        assert get_output_file() == ERROR_STRING
 
 
 def test_read_invalid_lba_error():
     ssd = SSD()
-    ssd.read('A')
-    assert get_output_file() == ERROR_STRING
+
+    for invalid_lba in ['A', '10', '50', 'AAA']:
+        ssd.read(invalid_lba)
+        assert get_output_file() == ERROR_STRING

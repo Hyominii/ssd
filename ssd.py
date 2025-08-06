@@ -1,5 +1,6 @@
-
 import os
+import sys
+
 from abc import ABC, abstractmethod
 
 OUTPUT_FILE = 'ssd_output.txt'
@@ -36,7 +37,7 @@ class SSD:
             with open(OUTPUT_FILE, "w") as f:
                 f.write(ERROR_STRING)
             return 1
-        if (address<0  or address >=100):
+        if (address < 0 or address >= 100):
             with open(OUTPUT_FILE, "w") as f:
                 f.write(ERROR_STRING)
             return 1
@@ -52,8 +53,13 @@ class SSD:
                 f.write(ERROR_STRING)
         return 0
 
+    def write(self, address: str, value: str) -> None:
+        if not address.isdigit():
+            with open(OUTPUT_FILE, 'w') as f:
+                f.write('ERROR')
+        return
       
-    def _write_output(self, content: str):
+          def _write_output(self, content: str):
         with open(OUTPUT_FILE, 'w') as f:
             f.write(content)
 
@@ -86,3 +92,28 @@ class SSD:
             for line in lines:
                 f.write(line + '\n')
 
+def main():
+    
+    if len(sys.argv) < 3:
+        print("Usage: ssd.py <command> <arg1> [arg2]")
+        sys.exit(1)
+
+    command = sys.argv[1]
+    arg1 = sys.argv[2]
+    arg2 = sys.argv[3] if len(sys.argv) > 3 else None
+
+    ssd = SSD()
+
+    if command == "R":
+        ssd.read(arg1)
+    elif command == "W":
+        if arg2 is None:
+            print("Missing value for write")
+            sys.exit(1)
+        ssd.write(arg1, arg2)
+    else:
+        print(f"Unknown command: {command}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
