@@ -85,7 +85,7 @@ class TestShellApp:
 
     def full_read(self):
         for address in range(0, 100):
-            if self._ssd_driver.run_ssd_read(address=str(address)) == READ_ERROR:
+            if self.read(address=str(address)) == READ_ERROR:
                 return READ_ERROR
         return READ_SUCCESS
 
