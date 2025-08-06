@@ -64,7 +64,7 @@ def test_read_blank_success():
     if os.path.exists(OUTPUT_FILE):
         os.remove(OUTPUT_FILE)
     ssd = SSD()
-    ssd.read(0)
+    ssd.read(50)
     assert get_output_file() == BLANK_STRING
 
 def test_read_lba_error_below_zero():
@@ -77,7 +77,6 @@ def test_read_lba_error_above_100():
     ssd.read(100)
     assert get_output_file() == ERROR_STRING
 
-def
 
 def test_read_invalid_lba_error():
     ssd = SSD()
