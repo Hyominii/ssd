@@ -128,12 +128,12 @@ def main():
     ssd = SSD()
 
     if command == "R":
-        ssd.read(arg1)
+        ssd.read(int(arg1))
     elif command == "W":
         if arg2 is None:
             print("Missing value for write")
             sys.exit(1)
-        ssd.write(arg1, arg2)
+        ssd.write(int(arg1), arg2)
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)
