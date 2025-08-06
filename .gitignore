@@ -8,6 +8,8 @@ __pycache__/
 # ssd files
 ssd_nand.txt
 ssd_output.txt
+tests/ssd_nand.txt
+tests/ssd_output.txt
 
 # C extensions
 *.so
