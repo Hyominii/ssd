@@ -35,7 +35,10 @@ class TestShellApp:
         return ret
 
     def full_write(self, value: str):
-        pass
+        for address in range(0, 100):
+            if self._ssd_driver.run_ssd_write(address=address, value=value) == self.WRITE_ERROR:
+                return self.WRITE_ERROR
+        return self.WRITE_SUCCESS
 
     def exit(self):
         raise SystemExit(0)

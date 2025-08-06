@@ -200,8 +200,20 @@ def test_shell_full_read():
     pass
 
 
-def test_shell_full_write():
-    pass
+def test_shell_full_write(shell_app, mocker: MockerFixture):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.side_effect = [TestShellApp.WRITE_SUCCESS] * 100
+
+    # Act
+    ret = test_shell_app.full_write(value=0)
+
+    # Assert
+    assert ret == TestShellApp.WRITE_SUCCESS
+
+    assert test_shell_app._ssd_driver.run_ssd_write.call_count == 100
 
 
 def test_shell_full_write_wrong_format():
