@@ -1,61 +1,50 @@
 import pytest
-import pytest_mock
-
-from ssd import SSD
-from ssd import OUTPUT_FILE, TARGET_FILE, ERROR_STRING
+from ssd import SSD, OUTPUT_FILE, TARGET_FILE, ERROR_STRING
 
 
-def read_ssd_output_txt() -> str:
+def read_output() -> str:
     with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
         return f.readline().strip()
 
 
-def read_ssd_target_txt() -> list[str]:
+def read_target() -> list[str]:
     with open(TARGET_FILE, 'r', encoding='utf-8') as f:
-        lines = [line.rstrip('\n') for line in f]
-    return lines
+        return [line.strip() for line in f]
 
 
-def test_write_invalid_address_A():
-    # arrange
-    ssd = SSD()
+@pytest.fixture
+def ssd():
+    return SSD()
+
+
+def test_write_invalid_address_non_integer(ssd):
+    # Arrange
     addr, value = 'A', '0x00000001'
 
-    # act
+    # Act
     ssd.write(addr, value)
-    result = read_ssd_output_txt()
 
-    # assert
-    assert result == 'ERROR'
+    # Assert
+    assert read_output() == ERROR_STRING
 
 
-def test_write_valid_address_valid_value():
-    # arrange
-    ssd = SSD()
+def test_write_valid_address_zero(ssd):
+    # Arrange
     addr, value = 0, '0x00000001'
 
-    # act
+    # Act
     ssd.write(addr, value)
-    result = read_ssd_output_txt()
 
-    # assert
-    assert result == value
+    # Assert
+    assert read_target()[addr] == value
 
 
-def test_write_another_valid_address_valid_value():
-    # arrange
-    ssd = SSD()
+def test_write_valid_address_nineteen(ssd):
+    # Arrange
     addr, value = 19, '0x00000001'
 
-    # act
+    # Act
     ssd.write(addr, value)
-    result = read_ssd_target_txt()[addr]
 
-    # assert
-    assert result == value
-
-
-
-
-
-
+    # Assert
+    assert read_target()[addr] == value
