@@ -7,6 +7,7 @@ WRITE_ERROR = -1
 READ_SUCCESS = SUCCESS
 READ_ERROR = -1
 
+
 class SSDDriver:
     def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
@@ -25,9 +26,13 @@ class SSDDriver:
         else:
             return READ_ERROR
 
-    def get_ssd_output(self):
-        # ssd_output.txt에서 결과를 가져온다
-        return "0x00000000"
+    def get_ssd_output(self, file_path: str = "ssd_output.txt"):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            line = f.readline().rstrip("\n")
+
+        if len(line) != 10:
+            raise ValueError(f"Error, value Length: {len(line)})")
+        return line
 
 
 class TestShellApp:
@@ -36,6 +41,7 @@ class TestShellApp:
             ssd_driver = SSDDriver()
 
         self._ssd_driver = ssd_driver
+        self._ssd_output_cache = None
 
     def is_address_valid(self, address: str):
         try:
@@ -49,10 +55,10 @@ class TestShellApp:
             return False  # 유효한 범위(0~99)를 벗어난 경우
 
     def format_hex_value(self, value: str) -> str | None:
-        if not value.startswith('0x'): # str 시작이 0x로 시작되어야함
+        if not value.startswith('0x'):  # str 시작이 0x로 시작되어야함
             return None
 
-        #값의 범위를 체크함
+        # 값의 범위를 체크함
         hex_str = value[2:]
 
         try:
@@ -69,9 +75,12 @@ class TestShellApp:
         if not self.is_address_valid(address):
             return READ_ERROR
 
-        status = self._ssd_driver.run_ssd_read(address)
-        ssd_output = self._ssd_driver.get_ssd_output()
-        print(f'[Read] LBA {address:02d} : {ssd_output}')
+        status = self._ssd_driver.run_ssd_read(address=address)
+        if status == READ_ERROR:
+            return status
+        self._ssd_output_cache = self._ssd_driver.get_ssd_output()
+        read_result = f'[Read] LBA {address.zfill(2)} : {self._ssd_output_cache}'
+        print(read_result)
         return status
 
     def full_read(self):
@@ -86,7 +95,6 @@ class TestShellApp:
             return WRITE_ERROR
 
         ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
-        print("[Write] Done")
         return ret
 
     def full_write(self, value: str):
@@ -122,20 +130,29 @@ class TestShellApp:
                 self.print_invalid_command()
                 continue
 
-            parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
-            cmd_name, *cmd_args = parts
-            if cmd_name == "exit":
-                self.exit()
-            elif cmd_name == "help":
-                self.help()
-            elif cmd_name == "write":
-                self.write(cmd_args[0], cmd_args[1])
-            elif cmd_name == "read":
-                self.read(cmd_args[0])
-            elif cmd_name == "fullwrite":
-                self.full_write(cmd_args[0])
-            elif cmd_name == "fullread":
-                self.full_read()
+            self.process_cmd(command)
+
+    def process_cmd(self, command):
+        parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
+        cmd_name, *cmd_args = parts
+        ret = SUCCESS
+
+        if cmd_name == "exit":
+            ret = self.exit()
+        elif cmd_name == "help":
+            ret = self.help()
+        elif cmd_name == "write":
+            ret = self.write(cmd_args[0], cmd_args[1])
+            if ret == SUCCESS:
+                print("[Write] Done")
+        elif cmd_name == "read":
+            ret = self.read(cmd_args[0])
+        elif cmd_name == "fullwrite":
+            ret = self.full_write(cmd_args[0])
+        elif cmd_name == "fullread":
+            ret = self.full_read()
+        if ret != SUCCESS:
+            self.print_invalid_command()
 
     def is_valid_command(self, command):
         if not command:

@@ -89,6 +89,7 @@ def test_shell_write_short_number(shell_app):
     # Assert
     assert ret == WRITE_SUCCESS
 
+
 def test_shell_write_wrong_format_data(shell_app):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
@@ -99,34 +100,59 @@ def test_shell_write_wrong_format_data(shell_app):
     # Assert
     assert ret == WRITE_ERROR
 
-def test_shell_read(shell_app, mocker: MockerFixture, capsys):
+
+def test_shell_read(shell_app, capsys):
     # Arrange
     shell_app._ssd_driver.run_ssd_read.return_value = 0
     shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
 
     # Act
-    ret = shell_app.read(address=0)
+    ret = shell_app.read(address="0")
     captured = capsys.readouterr()
 
     # Assert
     assert ret == READ_SUCCESS
     assert '[Read] LBA 00 : 0x00000000' in captured.out
+    shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
 
 
-def test_shell_read_wrong_address():
-    pass
+def test_shell_read_after_write(shell_app, capsys):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
+    shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
+
+    # Act
+    ret_write = shell_app.write(address="0", value="0x00000000")
+    ret_read = shell_app.read(address="0")
+    captured = capsys.readouterr()
+
+    # Assert
+    assert ret_write == WRITE_SUCCESS
+    assert ret_read == READ_SUCCESS
+    assert '[Read] LBA 00 : 0x00000000' in captured.out
+
+    shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
+    shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
 
 
-def test_shell_read_output_file():
-    pass
+def test_shell_read_after_read(shell_app, capsys):
+    # Arrange & Act
+    shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
+    shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
+    ret0 = shell_app.read(address="0")
 
+    shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
+    shell_app._ssd_driver.get_ssd_output.return_value = "0x00000010"
+    ret1 = shell_app.read(address="1")
 
-def test_shell_read_after_write():
-    pass
+    captured = capsys.readouterr()
 
-
-def test_shell_read_after_read():
-    pass
+    # Assert
+    assert ret0 == READ_SUCCESS
+    assert ret1 == READ_SUCCESS
+    assert '[Read] LBA 00 : 0x00000000' in captured.out
+    assert '[Read] LBA 01 : 0x00000010' in captured.out
 
 
 def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
@@ -193,7 +219,6 @@ def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, input, capsys):
     assert 'INVALID COMMAND' in captured.out
 
 
-# @pytest.mark.skip
 def test_shell_wrong_cmd_empty(shell_app, mocker: MockerFixture, capsys):
     mocker.patch("builtins.input", side_effect=[""])
 
@@ -265,6 +290,7 @@ def test_shell_full_read(shell_app, mocker: MockerFixture, capsys):
     captured = capsys.readouterr()
     assert ret == READ_SUCCESS
     assert test_shell_app._ssd_driver.run_ssd_read.call_count == 100
+
 
 def test_shell_full_write(shell_app, mocker: MockerFixture):
     # Arrange
