@@ -103,27 +103,6 @@ class SSD:
             f.writelines(line + '\n' for line in lines)
 
 
-<<<<<<< HEAD
-=======
-    # def write(self, address: int, value: str) -> None:
-    #     if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
-    #         self._write_output(ERROR_STRING)
-    #         return
-    #
-    #     lines = self._read_lines()
-    #     lines[address] = value
-    #     self._write_lines(lines)
-    #
-    #     with open(TARGET_FILE, 'r') as f:
-    #         lines = [line.rstrip('\n') for line in f]
-    #
-    #     lines[19] = '0x00000001'
-    #
-    #     with open(TARGET_FILE, 'w') as f:
-    #         for line in lines:
-    #             f.write(line + '\n')
-
->>>>>>> 8f4acf7 ([FIXED] ssd.py write 부분의 rebase 문제를 처리하였습니다)
 def main():
     if len(sys.argv) < 3:
         print("Usage: ssd.py <command> <arg1> [arg2]")
@@ -136,16 +115,15 @@ def main():
     ssd = SSD()
 
     if command == "R":
-        ssd.read(int(arg1))
+        ssd.read(arg1)
     elif command == "W":
         if arg2 is None:
             print("Missing value for write")
             sys.exit(1)
-        ssd.write(int(arg1), arg2)
+        ssd.write(arg1, arg2)
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
