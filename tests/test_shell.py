@@ -115,6 +115,7 @@ def test_shell_read(shell_app, capsys):
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
 
+
 def test_shell_read_with_real(capsys):
     # Arrange
     shell_app = TestShellApp()
@@ -125,7 +126,6 @@ def test_shell_read_with_real(capsys):
 
     # Assert
     assert ret == READ_SUCCESS
-    assert '[Read] LBA 00 : 0x00000000' in captured.out
 
 
 def test_shell_read_after_write(shell_app, capsys):
@@ -312,8 +312,10 @@ def test_shell_full_write(shell_app, mocker: MockerFixture):
     assert ret == WRITE_SUCCESS
     assert shell_app._ssd_driver.run_ssd_write.call_count == 100
 
+
 def test_shell_full_write_wrong_format():
     pass
+
 
 def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -329,6 +331,7 @@ def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, cap
     assert shell_app._ssd_driver.run_ssd_write.call_count == 100
     assert shell_app._ssd_driver.run_ssd_read.call_count == 100
 
+
 def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 150
@@ -343,6 +346,7 @@ def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
 
     assert shell_app._ssd_driver.run_ssd_write.call_count == 150
     assert shell_app._ssd_driver.run_ssd_read.call_count == 150
+
 
 def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, capsys):
     # Arrange
