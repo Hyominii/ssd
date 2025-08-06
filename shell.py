@@ -7,6 +7,7 @@ WRITE_ERROR = -1
 READ_SUCCESS = SUCCESS
 READ_ERROR = -1
 
+
 class SSDDriver:
     def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
@@ -86,7 +87,6 @@ class TestShellApp:
             return WRITE_ERROR
 
         ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
-        print("[Write] Done")
         return ret
 
     def full_write(self, value: str):
@@ -122,20 +122,29 @@ class TestShellApp:
                 self.print_invalid_command()
                 continue
 
-            parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
-            cmd_name, *cmd_args = parts
-            if cmd_name == "exit":
-                self.exit()
-            elif cmd_name == "help":
-                self.help()
-            elif cmd_name == "write":
-                self.write(cmd_args[0], cmd_args[1])
-            elif cmd_name == "read":
-                self.read(cmd_args[0])
-            elif cmd_name == "fullwrite":
-                self.full_write(cmd_args[0])
-            elif cmd_name == "fullread":
-                self.full_read()
+            self.process_cmd(command)
+
+    def process_cmd(self, command):
+        parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
+        cmd_name, *cmd_args = parts
+        ret = SUCCESS
+
+        if cmd_name == "exit":
+            ret = self.exit()
+        elif cmd_name == "help":
+            ret = self.help()
+        elif cmd_name == "write":
+            ret = self.write(cmd_args[0], cmd_args[1])
+            if ret == SUCCESS:
+                print("[Write] Done")
+        elif cmd_name == "read":
+            ret = self.read(cmd_args[0])
+        elif cmd_name == "fullwrite":
+            ret = self.full_write(cmd_args[0])
+        elif cmd_name == "fullread":
+            ret = self.full_read()
+        if ret != SUCCESS:
+            self.print_invalid_command()
 
     def is_valid_command(self, command):
         if not command:
