@@ -53,27 +53,6 @@ class SSD:
                 f.write(ERROR_STRING)
         return 0
 
-    def write(self, address: str, value: str) -> None:
-        if not address.isdigit():
-            with open(OUTPUT_FILE, 'w') as f:
-                f.write('ERROR')
-        return
-      
-          def _write_output(self, content: str):
-        with open(OUTPUT_FILE, 'w') as f:
-            f.write(content)
-
-
-    def _read_lines(self) -> list[str]:
-        with open(TARGET_FILE, 'r') as f:
-            return [line.rstrip('\n') for line in f]
-
-
-    def _write_lines(self, lines: list[str]):
-        with open(TARGET_FILE, 'w') as f:
-            f.writelines(line + '\n' for line in lines)
-
-
     def write(self, address: int, value: str) -> None:
         if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
             self._write_output(ERROR_STRING)
@@ -82,15 +61,20 @@ class SSD:
         lines = self._read_lines()
         lines[address] = value
         self._write_lines(lines)
+        self._write_output(value)
 
+    def _write_output(self, content: str):
+        with open(OUTPUT_FILE, 'w') as f:
+            f.write(content)
+
+    def _read_lines(self) -> list[str]:
         with open(TARGET_FILE, 'r') as f:
-            lines = [line.rstrip('\n') for line in f]
+            return [line.rstrip('\n') for line in f]
 
-        lines[19] = '0x00000001'
-
+    def _write_lines(self, lines: list[str]):
         with open(TARGET_FILE, 'w') as f:
-            for line in lines:
-                f.write(line + '\n')
+            f.writelines(line + '\n' for line in lines)
+
 
 def main():
     
