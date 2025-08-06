@@ -4,7 +4,7 @@ import subprocess
 
 class SSDDriver:
     def run_ssd_write(self, address: int, value: str):
-        command = ['python', 'ssd.py', str(address), str(value)]
+        command = ['python', 'ssd.py', 'W', str(address), str(value)]
         result = subprocess.run(command, capture_output=True, text=True)
 
         if result.returncode == 0:
@@ -18,8 +18,11 @@ class TestShellApp:
     WRITE_SUCCESS = SUCCESS
     WRITE_ERROR = -1
 
-    def __init__(self):
-        self._ssd_driver = SSDDriver()
+    def __init__(self, ssd_driver = None):
+        if ssd_driver == None:
+            ssd_driver = SSDDriver()
+
+        self._ssd_driver = ssd_driver
 
     def read(self, address: int):
         pass
@@ -28,7 +31,7 @@ class TestShellApp:
         pass
 
     def write(self, address: int, value: str):
-        ret = self._ssd_driver.run_ssd_write(address, value)
+        ret = self._ssd_driver.run_ssd_write(address = address, value = value)
         return ret
 
     def full_write(self, value: str):

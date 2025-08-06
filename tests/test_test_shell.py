@@ -1,40 +1,44 @@
 import pytest
 from pytest_mock import MockerFixture
-from test_shell import TestShellApp
+from test_shell import TestShellApp, SSDDriver
 
 
 @pytest.fixture
-def shell_app():
-    test_shell_app = TestShellApp()
+def shell_app(mocker):
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
     return test_shell_app
 
 
-def test_shell_write(mocker: MockerFixture):
+def test_shell_write(mocker):
     # Arrange
-    app = TestShellApp()
-    mock_run_ssd_write = mocker.patch('test_shell.SSDDriver.run_ssd_write')
-    mock_run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = app.write(address=0, value=0)
+    ret = test_shell_app.write(address=0, value=0)
 
     # Assert
     assert ret == TestShellApp.WRITE_SUCCESS
-    mock_run_ssd_write.assert_called_once()
+    test_shell_app._ssd_driver.run_ssd_write.assert_called_once()
 
 
-def test_shell_write_subprocess(mocker: MockerFixture):
+def test_shell_write_subprocess(mocker):
     # Arrange
-    app = TestShellApp()
-    mock_run_ssd_write = mocker.patch('test_shell.SSDDriver.run_ssd_write')
-    mock_run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = app.write(address=0, value=0)
+    ret = test_shell_app.write(address=0, value=0)
 
     # Assert
     assert ret == TestShellApp.WRITE_SUCCESS
-    mock_run_ssd_write.assert_called_once()
+    test_shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address=0, value=0)
 
 
 def test_shell_write_wrong_address():
