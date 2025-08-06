@@ -1,5 +1,4 @@
 import pytest
-import pytest_mock
 from pytest_mock import MockerFixture
 from test_shell import TestShellApp, SSDDriver
 
