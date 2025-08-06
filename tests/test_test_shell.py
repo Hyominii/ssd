@@ -53,19 +53,20 @@ def test_shell_write_short_number():
     pass
 
 
-def test_shell_read(mocker):
+def test_shell_read(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     ssd_driver_mock = mocker.Mock(spec=SSDDriver)
     test_shell_app = TestShellApp(ssd_driver_mock)
 
-    test_shell_app._ssd_driver.run_ssd_read.return_value = TestShellApp.READ_SUCCESS
+    test_shell_app._ssd_driver.run_ssd_read.return_value = 0
+    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
 
     # Act
     ret = test_shell_app.read(address=0)
-
-    # Assert
+    captured = capsys.readouterr()
     assert ret == TestShellApp.READ_SUCCESS
-    test_shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address=0)
+    assert '[Read] LBA 00 : 0x00000000' in captured.out
+
 
 def test_shell_read_wrong_address():
     pass
