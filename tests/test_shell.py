@@ -115,6 +115,18 @@ def test_shell_read(shell_app, capsys):
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
 
+def test_shell_read_with_real(capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    ret = shell_app.read(address="0")
+    captured = capsys.readouterr()
+
+    # Assert
+    assert ret == READ_SUCCESS
+    assert '[Read] LBA 00 : 0x00000000' in captured.out
+
 
 def test_shell_read_after_write(shell_app, capsys):
     # Arrange

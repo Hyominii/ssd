@@ -1,6 +1,7 @@
 import shlex
 import subprocess
 import random
+import os
 
 SUCCESS = 0
 ERROR = -1
@@ -8,12 +9,13 @@ WRITE_SUCCESS = SUCCESS
 WRITE_ERROR = ERROR
 READ_SUCCESS = SUCCESS
 READ_ERROR = ERROR
+ROOT_DIR = os.path.dirname(__file__)
 
 
 class SSDDriver:
     def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
 
         if result.returncode == 0:
             return WRITE_SUCCESS
@@ -22,13 +24,13 @@ class SSDDriver:
 
     def run_ssd_read(self, address: str):
         command = ['python', 'ssd.py', 'R', str(address)]
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
         if result.returncode == 0:
             return READ_SUCCESS
         else:
             return READ_ERROR
 
-    def get_ssd_output(self, file_path: str = "ssd_output.txt"):
+    def get_ssd_output(self, file_path: str = ROOT_DIR + "/ssd_output.txt"):
         with open(file_path, 'r', encoding='utf-8') as f:
             line = f.readline().rstrip("\n")
 
