@@ -10,7 +10,7 @@ TEST_VALUE = "0x01234567"
 def get_output_file() -> str:
     with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
         content_string = f.read()
-    return content_string.rstrip("\n")
+    return content_string
 
 
 def write_file(address: int, value: str):
