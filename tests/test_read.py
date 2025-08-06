@@ -67,10 +67,17 @@ def test_read_blank_success():
     ssd.read(0)
     assert get_output_file() == BLANK_STRING
 
-def test_read_lba_error():
+def test_read_lba_error_below_zero():
     ssd = SSD()
     ssd.read(-1)
     assert get_output_file() == ERROR_STRING
+
+def test_read_lba_error_above_100():
+    ssd = SSD()
+    ssd.read(100)
+    assert get_output_file() == ERROR_STRING
+
+def
 
 def test_read_invalid_lba_error():
     ssd = SSD()
