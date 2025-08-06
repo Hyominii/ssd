@@ -18,6 +18,9 @@ class TestShellApp:
     WRITE_SUCCESS = SUCCESS
     WRITE_ERROR = -1
 
+    def __init__(self):
+        self._ssd_driver = SSDDriver()
+
     def read(self, address: int):
         pass
 
@@ -25,7 +28,7 @@ class TestShellApp:
         pass
 
     def write(self, address: int, value: str):
-        ret = SSDDriver.run_ssd_write(address, value)
+        ret = self._ssd_driver.run_ssd_write(address, value)
         return ret
 
     def full_write(self, value: str):
