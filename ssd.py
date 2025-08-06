@@ -30,7 +30,10 @@ class SSD:
         return
 
     def read(self, address: int) -> int:
-
+        if (address<0  or address >=100):
+            with open(OUTPUT_FILE, "w") as f:
+                f.write(ERROR_STRING)
+            return 1
         with open(TARGET_FILE, "r") as f:
             lines = f.readlines()
 

@@ -27,20 +27,21 @@ def write_file(address:int, value: str):
     return 0
 
 def test_read_file_exist():
-    ssd = SSD()
     if os.path.exists(TARGET_FILE):
         os.remove(TARGET_FILE)
     assert not os.path.exists(TARGET_FILE)
+    ssd = SSD()
     ssd.read(0)
+    print(TARGET_FILE)
     assert os.path.exists(TARGET_FILE)
     os.remove(TARGET_FILE)
 
-def test_write_file_exist():
-    ssd = SSD()
+def test_write_file_exist(tmp_path):
     if os.path.exists(TARGET_FILE):
         os.remove(TARGET_FILE)
     assert not os.path.exists(TARGET_FILE)
-    ssd.write(0,"00")
+    ssd = SSD()
+    write_file(0, TEST_VALUE)
     assert os.path.exists(TARGET_FILE)
     os.remove(TARGET_FILE)
 
