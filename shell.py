@@ -1,30 +1,29 @@
 import shlex
 import subprocess
 
+SUCCESS = 0
+WRITE_SUCCESS = SUCCESS
+WRITE_ERROR = -1
+READ_SUCCESS = SUCCESS
+READ_ERROR = -1
 
 class SSDDriver:
-    SUCCESS = 0
-    WRITE_SUCCESS = SUCCESS
-    WRITE_ERROR = -1
-    READ_SUCCESS = SUCCESS
-    READ_ERROR = -1
-
     def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
         result = subprocess.run(command, capture_output=True, text=True)
 
         if result.returncode == 0:
-            return self.WRITE_SUCCESS
+            return WRITE_SUCCESS
         else:
-            return self.WRITE_ERROR
+            return WRITE_ERROR
 
     def run_ssd_read(self, address: str):
         command = ['python', 'ssd.py', 'R', str(address)]
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode == 0:
-            return self.READ_SUCCESS
+            return READ_SUCCESS
         else:
-            return self.READ_ERROR
+            return READ_ERROR
 
     def get_ssd_output(self):
         # ssd_output.txt에서 결과를 가져온다
@@ -32,12 +31,6 @@ class SSDDriver:
 
 
 class TestShellApp:
-    SUCCESS = 0
-    WRITE_SUCCESS = SUCCESS
-    WRITE_ERROR = -1
-    READ_SUCCESS = SUCCESS
-    READ_ERROR = -1
-
     def __init__(self, ssd_driver=None):
         if ssd_driver == None:
             ssd_driver = SSDDriver()
@@ -74,7 +67,7 @@ class TestShellApp:
 
     def read(self, address: str):
         if not self.is_address_valid(address):
-            return self.READ_ERROR
+            return READ_ERROR
 
         status = self._ssd_driver.run_ssd_read(address)
         ssd_output = self._ssd_driver.get_ssd_output()
@@ -83,14 +76,14 @@ class TestShellApp:
 
     def full_read(self):
         for address in range(0, 100):
-            if self._ssd_driver.run_ssd_read(address=address) == self.READ_ERROR:
-                return self.READ_ERROR
-        return self.READ_SUCCESS
+            if self._ssd_driver.run_ssd_read(address=address) == READ_ERROR:
+                return READ_ERROR
+        return READ_SUCCESS
 
     def write(self, address: str, value: str):
         formatted_value = self.format_hex_value(value)
         if formatted_value == None or not self.is_address_valid(address):
-            return self.WRITE_ERROR
+            return WRITE_ERROR
 
         ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
         print("[Write] Done")
@@ -98,9 +91,9 @@ class TestShellApp:
 
     def full_write(self, value: str):
         for address in range(0, 100):
-            if self._ssd_driver.run_ssd_write(address=address, value=value) == self.WRITE_ERROR:
-                return self.WRITE_ERROR
-        return self.WRITE_SUCCESS
+            if self._ssd_driver.run_ssd_write(address=address, value=value) == WRITE_ERROR:
+                return WRITE_ERROR
+        return WRITE_SUCCESS
 
     def exit(self):
         raise SystemExit(0)
