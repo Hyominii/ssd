@@ -26,7 +26,7 @@ class SSDDriver:
         else:
             return READ_ERROR
 
-    def get_ssd_output(self,file_path: str = "ssd_output.txt"):
+    def get_ssd_output(self, file_path: str = "ssd_output.txt"):
         with open(file_path, 'r', encoding='utf-8') as f:
             line = f.readline().rstrip("\n")
 
@@ -41,6 +41,7 @@ class TestShellApp:
             ssd_driver = SSDDriver()
 
         self._ssd_driver = ssd_driver
+        self._ssd_output_cache = None
 
     def is_address_valid(self, address: str):
         try:
@@ -77,8 +78,9 @@ class TestShellApp:
         status = self._ssd_driver.run_ssd_read(address=address)
         if status == READ_ERROR:
             return status
-        ssd_output = self._ssd_driver.get_ssd_output()
-        print(f'[Read] LBA {address.zfill(2)} : {ssd_output}')
+        self._ssd_output_cache = self._ssd_driver.get_ssd_output()
+        read_result = f'[Read] LBA {address.zfill(2)} : {self._ssd_output_cache}'
+        print(read_result)
         return status
 
     def full_read(self):
