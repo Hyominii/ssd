@@ -1,11 +1,14 @@
 import shlex
 import subprocess
 
+from matplotlib.dates import TUESDAY
+
 SUCCESS = 0
+ERROR = -1
 WRITE_SUCCESS = SUCCESS
-WRITE_ERROR = -1
+WRITE_ERROR = ERROR
 READ_SUCCESS = SUCCESS
-READ_ERROR = -1
+READ_ERROR = ERROR
 
 
 class SSDDriver:
@@ -42,6 +45,15 @@ class TestShellApp:
 
         self._ssd_driver = ssd_driver
         self._ssd_output_cache = None
+
+        self.command_specs = {
+            "exit": (0, lambda: self.exit()),
+            "help": (0, lambda: self.help()),
+            "fullread": (0, lambda: self.full_read()),
+            "write": (2, lambda args: self.write(args[0], args[1])),
+            "read": (1, lambda args: self.read(args[0])),
+            "fullwrite": (1, lambda args: self.full_write(args[0])),
+        }
 
     def is_address_valid(self, address: str):
         try:
@@ -168,6 +180,7 @@ class TestShellApp:
         print("  fullread                 : 전체 LBA 읽기 및 출력")
         print("  help                     : 도움말 출력")
         print("  exit                     : 종료")
+        return SUCCESS
 
     def run(self, max_iterations: int = None):
         print(f"안녕하세요, SSD 검증용 Test Shell App을 시작합니다.\n")
@@ -184,50 +197,48 @@ class TestShellApp:
 
             self.process_cmd(command)
 
-    def process_cmd(self, command):
-        parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
-        cmd_name, *cmd_args = parts
-        ret = SUCCESS
+    def is_valid_command(self, command):
+        parts = shlex.split(command)
+        if not parts:
+            return False
 
-        if cmd_name == "exit":
-            ret = self.exit()
-        elif cmd_name == "help":
-            ret = self.help()
-        elif cmd_name == "write":
-            ret = self.write(cmd_args[0], cmd_args[1])
-            if ret == SUCCESS:
-                print("[Write] Done")
-        elif cmd_name == "read":
-            ret = self.read(cmd_args[0])
-        elif cmd_name == "fullwrite":
-            ret = self.full_write(cmd_args[0])
-        elif cmd_name == "fullread":
-            ret = self.full_read()
+        cmd_name, *cmd_args = parts
+        spec = self.command_specs.get(cmd_name)
+        if not spec:
+            return False
+
+        expected_arg_count, _ = spec
+        return len(cmd_args) == expected_arg_count
+
+    def process_cmd(self, command):
+        parts = shlex.split(command)
+        if not parts:
+            self.print_invalid_command()
+            return
+
+        cmd_name, *cmd_args = parts
+        spec = self.command_specs.get(cmd_name)
+        if not spec:
+            self.print_invalid_command()
+            return
+
+        expected_arg_count, handler = spec
+        if len(cmd_args) != expected_arg_count:
+            self.print_invalid_command()
+            return
+
+        try:
+            if cmd_name == "write":
+                ret = handler(cmd_args)
+                if ret == SUCCESS:
+                    print("[Write] Done")
+            else:
+                ret = handler(cmd_args) if expected_arg_count else handler()
+        except Exception:
+            ret = ERROR
+
         if ret != SUCCESS:
             self.print_invalid_command()
-
-    def is_valid_command(self, command):
-        if not command:
-            return False
-
-        parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
-        cmd_name, *cmd_args = parts
-        if cmd_name == "exit" or cmd_name == "help" or cmd_name == "fullread":
-            if len(cmd_args) > 0:
-                return False
-        elif cmd_name == "write":
-            if len(cmd_args) != 2:
-                return False
-        elif cmd_name == "read":
-            if len(cmd_args) != 1:
-                return False
-        elif cmd_name == "fullwrite":
-            if len(cmd_args) != 1:
-                return False
-        else:
-            return False
-
-        return True
 
     def print_invalid_command(self):
         print("INVALID COMMAND")
