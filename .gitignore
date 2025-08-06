@@ -5,6 +5,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# ssd files
+ssd_nand.txt
+ssd_output.txt
+
 # C extensions
 *.so
 
