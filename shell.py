@@ -26,9 +26,13 @@ class SSDDriver:
         else:
             return READ_ERROR
 
-    def get_ssd_output(self):
-        # ssd_output.txt에서 결과를 가져온다
-        return "0x00000000"
+    def get_ssd_output(self, file_path: str = "ssd_output.txt"):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            line = f.readline().rstrip("\n")
+
+        if len(line) != 10:
+            raise ValueError(f"Error, value Length: {len(line)})")
+        return line
 
 
 class TestShellApp:
@@ -37,6 +41,7 @@ class TestShellApp:
             ssd_driver = SSDDriver()
 
         self._ssd_driver = ssd_driver
+        self._ssd_output_cache = None
 
     def is_address_valid(self, address: str):
         try:
@@ -71,8 +76,11 @@ class TestShellApp:
             return READ_ERROR
 
         status = self._ssd_driver.run_ssd_read(address=address)
-        ssd_output = self._ssd_driver.get_ssd_output()
-        print(f'[Read] LBA {address.zfill(2)} : {ssd_output}')
+        if status == READ_ERROR:
+            return status
+        self._ssd_output_cache = self._ssd_driver.get_ssd_output()
+        read_result = f'[Read] LBA {address.zfill(2)} : {self._ssd_output_cache}'
+        print(read_result)
         return status
 
     def full_read(self):
