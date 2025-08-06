@@ -277,9 +277,19 @@ def test_shell_help(capsys):
         assert line in output_lines
 
 
-def test_shell_full_read():
-    pass
+def test_shell_full_read(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
 
+    test_shell_app._ssd_driver.run_ssd_read.side_effect = [0] * 100
+    test_shell_app._ssd_driver.get_ssd_output.side_effect = ["0x00000000"] * 100
+
+    # Act
+    ret = test_shell_app.full_read()
+    captured = capsys.readouterr()
+    assert ret == TestShellApp.READ_SUCCESS
+    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 100
 
 def test_shell_full_write(shell_app, mocker: MockerFixture):
     # Arrange

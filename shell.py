@@ -82,7 +82,10 @@ class TestShellApp:
         return status
 
     def full_read(self):
-        pass
+        for address in range(0, 100):
+            if self._ssd_driver.run_ssd_read(address=address) == self.READ_ERROR:
+                return self.READ_ERROR
+        return self.READ_SUCCESS
 
     def write(self, address: str, value: str):
         formatted_value = self.format_hex_value(value)
