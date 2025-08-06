@@ -1,6 +1,6 @@
 import pytest
 from pytest_mock import MockerFixture
-from test_shell import TestShellApp, SSDDriver
+from shell import TestShellApp, SSDDriver
 
 
 @pytest.fixture
@@ -156,7 +156,7 @@ def test_shell_read_after_read():
 
 def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
-    mock_method = mocker.patch("test_shell.TestShellApp.exit")
+    mock_method = mocker.patch("shell.TestShellApp.exit")
 
     shell_app.run(1)
 
@@ -165,7 +165,7 @@ def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["read 1"])
-    mock_method = mocker.patch("test_shell.TestShellApp.read")
+    mock_method = mocker.patch("shell.TestShellApp.read")
 
     shell_app.run(1)
 
@@ -174,7 +174,7 @@ def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
-    mock_method = mocker.patch("test_shell.TestShellApp.write")
+    mock_method = mocker.patch("shell.TestShellApp.write")
 
     shell_app.run(1)
 
@@ -183,7 +183,7 @@ def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["help"])
-    mock_method = mocker.patch("test_shell.TestShellApp.help")
+    mock_method = mocker.patch("shell.TestShellApp.help")
 
     shell_app.run(1)
 
@@ -192,7 +192,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullread"])
-    mock_method = mocker.patch("test_shell.TestShellApp.full_read")
+    mock_method = mocker.patch("shell.TestShellApp.full_read")
 
     shell_app.run(1)
 
@@ -201,7 +201,7 @@ def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullwrite 0x00010000"])
-    mock_method = mocker.patch("test_shell.TestShellApp.full_write")
+    mock_method = mocker.patch("shell.TestShellApp.full_write")
 
     shell_app.run(1)
 
@@ -245,7 +245,7 @@ def test_shell_subprocess_cmd():
 # @pytest.mark.skip
 def test_shell_exit(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
-    exit_mock = mocker.patch("test_shell.TestShellApp.exit", side_effect=SystemExit(0))
+    exit_mock = mocker.patch("shell.TestShellApp.exit", side_effect=SystemExit(0))
 
     with pytest.raises(SystemExit) as e:
         shell_app.run(1)
