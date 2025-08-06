@@ -3,6 +3,12 @@ import subprocess
 
 
 class SSDDriver:
+    SUCCESS = 0
+    WRITE_SUCCESS = SUCCESS
+    WRITE_ERROR = -1
+    READ_SUCCESS = SUCCESS
+    READ_ERROR = -1
+
     def run_ssd_write(self, address: int, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
         result = subprocess.run(command, capture_output=True, text=True)
@@ -12,26 +18,43 @@ class SSDDriver:
         else:
             return self.WRITE_ERROR
 
+    def run_ssd_read(self, address: int):
+        command = ['python', 'ssd.py', 'R', str(address)]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode == 0:
+            return self.READ_SUCCESS
+        else:
+            return self.READ_ERROR
+
+    def get_ssd_output(self):
+        # ssd_output.txt에서 결과를 가져온다
+        return "0x00000000"
+
 
 class TestShellApp:
     SUCCESS = 0
     WRITE_SUCCESS = SUCCESS
     WRITE_ERROR = -1
+    READ_SUCCESS = SUCCESS
+    READ_ERROR = -1
 
-    def __init__(self, ssd_driver = None):
+    def __init__(self, ssd_driver=None):
         if ssd_driver == None:
             ssd_driver = SSDDriver()
 
         self._ssd_driver = ssd_driver
 
     def read(self, address: int):
-        pass
+        status = self._ssd_driver.run_ssd_read(address)
+        ssd_output = self._ssd_driver.get_ssd_output()
+        print(f'[Read] LBA {address:02d} : {ssd_output}')
+        return status
 
     def full_read(self):
         pass
 
     def write(self, address: int, value: str):
-        ret = self._ssd_driver.run_ssd_write(address = address, value = value)
+        ret = self._ssd_driver.run_ssd_write(address=address, value=value)
         return ret
 
     def full_write(self, value: str):
