@@ -9,7 +9,7 @@ class SSDDriver:
     READ_SUCCESS = SUCCESS
     READ_ERROR = -1
 
-    def run_ssd_write(self, address: int, value: str):
+    def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
         result = subprocess.run(command, capture_output=True, text=True)
 
@@ -18,7 +18,7 @@ class SSDDriver:
         else:
             return self.WRITE_ERROR
 
-    def run_ssd_read(self, address: int):
+    def run_ssd_read(self, address: str):
         command = ['python', 'ssd.py', 'R', str(address)]
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode == 0:
@@ -44,7 +44,7 @@ class TestShellApp:
 
         self._ssd_driver = ssd_driver
 
-    def read(self, address: int):
+    def read(self, address: str):
         status = self._ssd_driver.run_ssd_read(address)
         ssd_output = self._ssd_driver.get_ssd_output()
         print(f'[Read] LBA {address:02d} : {ssd_output}')
@@ -52,6 +52,17 @@ class TestShellApp:
 
     def full_read(self):
         pass
+
+    def is_address_valid(self, address: str):
+        try:
+            address_int = int(address)
+        except ValueError:
+            return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
+
+        if 0 <= address_int <= 99:
+            return True
+        else:
+            return False  # 유효한 범위(0~99)를 벗어난 경우
 
     def format_hex_value(self, value: str) -> str | None:
         if not value.startswith('0x'): # str 시작이 0x로 시작되어야함
@@ -70,13 +81,9 @@ class TestShellApp:
 
         return f'0x{int_value:08X}'
 
-    def write(self, address: int, value: str):
-        if address < 0 or address > 99 or not isinstance(address, int):
-            return self.WRITE_ERROR
-
+    def write(self, address: str, value: str):
         formatted_value = self.format_hex_value(value)
-
-        if formatted_value == None:
+        if formatted_value == None or not self.is_address_valid(address):
             return self.WRITE_ERROR
 
         ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
