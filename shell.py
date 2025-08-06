@@ -26,9 +26,13 @@ class SSDDriver:
         else:
             return READ_ERROR
 
-    def get_ssd_output(self):
-        # ssd_output.txt에서 결과를 가져온다
-        return "0x00000000"
+    def get_ssd_output(self,file_path: str = "ssd_output.txt"):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            line = f.readline().rstrip("\n")
+
+        if len(line) != 10:
+            raise ValueError(f"Error, value Length: {len(line)})")
+        return line
 
 
 class TestShellApp:
