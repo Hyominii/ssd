@@ -55,9 +55,9 @@ class TestShellApp:
             "1_": (0, lambda: self.full_write_and_read_compare()),
             "1_FullWriteAndReadCompare": (0, lambda: self.full_write_and_read_compare()),
             "2_": (0, lambda: self.partial_lba_write()),
-            "2_PartialLBAWrite”": (0, lambda: self.partial_lba_write()),
+            "2_PartialLBAWrite": (0, lambda: self.partial_lba_write()),
             "3_": (0, lambda: self.write_read_aging()),
-            "3_WriteReadAging”": (0, lambda: self.write_read_aging()),
+            "3_WriteReadAging": (0, lambda: self.write_read_aging()),
         }
 
     def is_address_valid(self, address: str):
@@ -184,12 +184,15 @@ class TestShellApp:
         print("팀명: BestReviewer")
         print("팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈")
         print("사용 가능한 명령어:")
-        print("  write <LBA> <Value>      : 특정 LBA에 값 저장")
-        print("  read <LBA>               : 특정 LBA 값 읽기")
-        print("  fullwrite <Value>        : 전체 LBA에 동일 값 저장")
-        print("  fullread                 : 전체 LBA 읽기 및 출력")
-        print("  help                     : 도움말 출력")
-        print("  exit                     : 종료")
+        print("  write <LBA> <Value>       : 특정 LBA에 값 저장")
+        print("  read <LBA>                : 특정 LBA 값 읽기")
+        print("  fullwrite <Value>         : 전체 LBA에 동일 값 저장")
+        print("  fullread                  : 전체 LBA 읽기 및 출력")
+        print("  1_FullWriteAndReadCompare : 전체 LBA 쓰기 및 비교")
+        print("  2_PartialLBAWrite         : LBA 0 ~ 4 쓰기 및 읽기 30회")
+        print("  3_WriteReadAging          : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회")
+        print("  help                      : 도움말 출력")
+        print("  exit                      : 종료")
         return SUCCESS
 
     def run(self, max_iterations: int = None):
