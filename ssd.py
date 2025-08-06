@@ -19,7 +19,7 @@ class SSD:
         # 파일이 없으면 새로 생성
         # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
         if os.path.exists(filename):
-            os.remove(filename)
+            return
         with open(filename, "w") as f:
             [f.write(BLANK_STRING + "\n") for _ in range(100)]
         return
@@ -89,12 +89,12 @@ def main():
     ssd = SSD()
 
     if command == "R":
-        ssd.read(arg1)
+        ssd.read(int(arg1))
     elif command == "W":
         if arg2 is None:
             print("Missing value for write")
             sys.exit(1)
-        ssd.write(arg1, arg2)
+        ssd.write(int(arg1), arg2)
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)
