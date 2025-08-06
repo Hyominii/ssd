@@ -59,7 +59,7 @@ class SSD:
                 f.write('ERROR')
         return
       
-          def _write_output(self, content: str):
+    def _write_output(self, content: str):
         with open(OUTPUT_FILE, 'w') as f:
             f.write(content)
 
@@ -93,7 +93,6 @@ class SSD:
                 f.write(line + '\n')
 
 def main():
-    
     if len(sys.argv) < 3:
         print("Usage: ssd.py <command> <arg1> [arg2]")
         sys.exit(1)
@@ -105,12 +104,12 @@ def main():
     ssd = SSD()
 
     if command == "R":
-        ssd.read(arg1)
+        ssd.read(int(arg1))
     elif command == "W":
         if arg2 is None:
             print("Missing value for write")
             sys.exit(1)
-        ssd.write(arg1, arg2)
+        ssd.write(int(arg1), arg2)
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)
