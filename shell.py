@@ -85,7 +85,7 @@ class TestShellApp:
 
     def full_read(self):
         for address in range(0, 100):
-            if self._ssd_driver.run_ssd_read(address=address) == READ_ERROR:
+            if self._ssd_driver.run_ssd_read(address=str(address)) == READ_ERROR:
                 return READ_ERROR
         return READ_SUCCESS
 
@@ -98,8 +98,12 @@ class TestShellApp:
         return ret
 
     def full_write(self, value: str):
+        formatted_value = self.format_hex_value(value)
+        if formatted_value == None:
+            return WRITE_ERROR
+
         for address in range(0, 100):
-            if self._ssd_driver.run_ssd_write(address=address, value=value) == WRITE_ERROR:
+            if self._ssd_driver.run_ssd_write(address=str(address), value=formatted_value) == WRITE_ERROR:
                 return WRITE_ERROR
         return WRITE_SUCCESS
 
