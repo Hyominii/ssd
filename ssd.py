@@ -1,8 +1,8 @@
 
 import os
 
-OUTPUT_FILE = 'ssd_output.txt'
-TARGET_FILE = 'ssd_nand.txt'
+OUTPUT_FILE = '../ssd_output.txt'
+TARGET_FILE = '../ssd_nand.txt'
 BLANK_STRING = "0x00000000"
 ERROR_STRING = 'ERROR'
 
@@ -54,6 +54,8 @@ class SSD:
         if not address.isdigit():
             with open(OUTPUT_FILE, 'w') as f:
                 f.write('ERROR')
-        return
+
+        with open(OUTPUT_FILE, 'w') as f:
+            f.write('0x00000001')
 
 
