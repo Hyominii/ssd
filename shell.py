@@ -3,7 +3,13 @@ import subprocess
 
 
 class SSDDriver:
-    def run_ssd_write(self, address: int, value: str):
+    SUCCESS = 0
+    WRITE_SUCCESS = SUCCESS
+    WRITE_ERROR = -1
+    READ_SUCCESS = SUCCESS
+    READ_ERROR = -1
+
+    def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
         result = subprocess.run(command, capture_output=True, text=True)
 
@@ -12,26 +18,82 @@ class SSDDriver:
         else:
             return self.WRITE_ERROR
 
+    def run_ssd_read(self, address: str):
+        command = ['python', 'ssd.py', 'R', str(address)]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode == 0:
+            return self.READ_SUCCESS
+        else:
+            return self.READ_ERROR
+
+    def get_ssd_output(self):
+        # ssd_output.txt에서 결과를 가져온다
+        return "0x00000000"
+
 
 class TestShellApp:
     SUCCESS = 0
     WRITE_SUCCESS = SUCCESS
     WRITE_ERROR = -1
+    READ_SUCCESS = SUCCESS
+    READ_ERROR = -1
 
-    def __init__(self, ssd_driver = None):
+    def __init__(self, ssd_driver=None):
         if ssd_driver == None:
             ssd_driver = SSDDriver()
 
         self._ssd_driver = ssd_driver
 
-    def read(self, address: int):
-        pass
+    def is_address_valid(self, address: str):
+        try:
+            address_int = int(address)
+        except ValueError:
+            return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
+
+        if 0 <= address_int <= 99:
+            return True
+        else:
+            return False  # 유효한 범위(0~99)를 벗어난 경우
+
+    def format_hex_value(self, value: str) -> str | None:
+        if not value.startswith('0x'): # str 시작이 0x로 시작되어야함
+            return None
+
+        #값의 범위를 체크함
+        hex_str = value[2:]
+
+        try:
+            int_value = int(hex_str, 16)
+        except ValueError:
+            return None
+
+        if not (0 <= int_value <= 0xFFFFFFFF):
+            return None
+
+        return f'0x{int_value:08X}'
+
+    def read(self, address: str):
+        if not self.is_address_valid(address):
+            return self.READ_ERROR
+
+        status = self._ssd_driver.run_ssd_read(address)
+        ssd_output = self._ssd_driver.get_ssd_output()
+        print(f'[Read] LBA {address:02d} : {ssd_output}')
+        return status
 
     def full_read(self):
-        pass
+        for address in range(0, 100):
+            if self._ssd_driver.run_ssd_read(address=address) == self.READ_ERROR:
+                return self.READ_ERROR
+        return self.READ_SUCCESS
 
-    def write(self, address: int, value: str):
-        ret = self._ssd_driver.run_ssd_write(address = address, value = value)
+    def write(self, address: str, value: str):
+        formatted_value = self.format_hex_value(value)
+        if formatted_value == None or not self.is_address_valid(address):
+            return self.WRITE_ERROR
+
+        ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
+        print("[Write] Done")
         return ret
 
     def full_write(self, value: str):

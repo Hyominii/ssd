@@ -1,6 +1,6 @@
 import pytest
 from pytest_mock import MockerFixture
-from test_shell import TestShellApp, SSDDriver
+from shell import TestShellApp, SSDDriver
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def test_shell_write(mocker):
     test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address=0, value=0)
+    ret = test_shell_app.write(address="0", value="0x00000000")
 
     # Assert
     assert ret == TestShellApp.WRITE_SUCCESS
@@ -34,27 +34,108 @@ def test_shell_write_subprocess(mocker):
     test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
 
     # Act
-    ret = test_shell_app.write(address=0, value=0)
+    ret = test_shell_app.write(address="0", value="0x00000000")
 
     # Assert
     assert ret == TestShellApp.WRITE_SUCCESS
-    test_shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address=0, value=0)
+    test_shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
 
 
-def test_shell_write_wrong_address():
-    pass
+def test_shell_write_wrong_address_small_address(mocker):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+
+    # Act
+    ret = test_shell_app.write(address="-1", value="0x00000000")
+
+    # Assert
+    assert ret == TestShellApp.WRITE_ERROR
 
 
-def test_shell_write_wrong_data_format():
-    pass
+def test_shell_write_wrong_address_big_address(mocker):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+
+    # Act
+    ret = test_shell_app.write(address="100", value="0x00000000")
+
+    # Assert
+    assert ret == TestShellApp.WRITE_ERROR
 
 
-def test_shell_write_short_number():
-    pass
+def test_shell_write_wrong_address_float_address(mocker):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+
+    # Act
+    ret = test_shell_app.write(address="0.5", value="0x00000000")
+
+    # Assert
+    assert ret == TestShellApp.WRITE_ERROR
 
 
-def test_shell_read():
-    pass
+def test_shell_write_wrong_data_format_big_number(mocker):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+
+    # Act
+    ret = test_shell_app.write(address="0", value="0xAAAAAAAAAA")
+
+    # Assert
+    assert ret == TestShellApp.WRITE_ERROR
+
+
+def test_shell_write_short_number(mocker):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+
+    # Act
+    ret = test_shell_app.write(address="0", value="0xAA")
+
+    # Assert
+    assert ret == TestShellApp.WRITE_SUCCESS
+
+def test_shell_write_wrong_format_data(mocker):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_write.return_value = TestShellApp.WRITE_SUCCESS
+
+    # Act
+    ret = test_shell_app.write(address="0", value="123")
+
+    # Assert
+    assert ret == TestShellApp.WRITE_ERROR
+
+def test_shell_read(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
+
+    test_shell_app._ssd_driver.run_ssd_read.return_value = 0
+    test_shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
+
+    # Act
+    ret = test_shell_app.read(address=0)
+    captured = capsys.readouterr()
+    assert ret == TestShellApp.READ_SUCCESS
+    assert '[Read] LBA 00 : 0x00000000' in captured.out
 
 
 def test_shell_read_wrong_address():
@@ -75,7 +156,7 @@ def test_shell_read_after_read():
 
 def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
-    mock_method = mocker.patch("test_shell.TestShellApp.exit")
+    mock_method = mocker.patch("shell.TestShellApp.exit")
 
     shell_app.run(1)
 
@@ -84,7 +165,7 @@ def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["read 1"])
-    mock_method = mocker.patch("test_shell.TestShellApp.read")
+    mock_method = mocker.patch("shell.TestShellApp.read")
 
     shell_app.run(1)
 
@@ -93,7 +174,7 @@ def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
-    mock_method = mocker.patch("test_shell.TestShellApp.write")
+    mock_method = mocker.patch("shell.TestShellApp.write")
 
     shell_app.run(1)
 
@@ -102,7 +183,7 @@ def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["help"])
-    mock_method = mocker.patch("test_shell.TestShellApp.help")
+    mock_method = mocker.patch("shell.TestShellApp.help")
 
     shell_app.run(1)
 
@@ -111,7 +192,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullread"])
-    mock_method = mocker.patch("test_shell.TestShellApp.full_read")
+    mock_method = mocker.patch("shell.TestShellApp.full_read")
 
     shell_app.run(1)
 
@@ -120,7 +201,7 @@ def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
 
 def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullwrite 0x00010000"])
-    mock_method = mocker.patch("test_shell.TestShellApp.full_write")
+    mock_method = mocker.patch("shell.TestShellApp.full_write")
 
     shell_app.run(1)
 
@@ -164,7 +245,7 @@ def test_shell_subprocess_cmd():
 # @pytest.mark.skip
 def test_shell_exit(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
-    exit_mock = mocker.patch("test_shell.TestShellApp.exit", side_effect=SystemExit(0))
+    exit_mock = mocker.patch("shell.TestShellApp.exit", side_effect=SystemExit(0))
 
     with pytest.raises(SystemExit) as e:
         shell_app.run(1)
@@ -196,9 +277,19 @@ def test_shell_help(capsys):
         assert line in output_lines
 
 
-def test_shell_full_read():
-    pass
+def test_shell_full_read(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
 
+    test_shell_app._ssd_driver.run_ssd_read.side_effect = [0] * 100
+    test_shell_app._ssd_driver.get_ssd_output.side_effect = ["0x00000000"] * 100
+
+    # Act
+    ret = test_shell_app.full_read()
+    captured = capsys.readouterr()
+    assert ret == TestShellApp.READ_SUCCESS
+    assert test_shell_app._ssd_driver.run_ssd_read.call_count == 100
 
 def test_shell_full_write(shell_app, mocker: MockerFixture):
     # Arrange
