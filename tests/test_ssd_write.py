@@ -26,7 +26,7 @@ def test_write_invalid_address_A():
 def test_write_valid_address_valid_value():
     # arrange
     ssd = SSD()
-    addr, value = '0', '0x00000001'
+    addr, value = 0, '0x00000001'
 
     # act
     ssd.write(addr, value)

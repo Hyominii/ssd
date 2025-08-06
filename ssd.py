@@ -50,12 +50,12 @@ class SSD:
                 f.write(ERROR_STRING)
         return 0
 
-    def write(self, address: str, value: str) -> None:
-        if not address.isdigit():
-            with open(OUTPUT_FILE, 'w') as f:
+    def write(self, address: int, value: str) -> None:
+        if not (isinstance(address, int)):
+            with open(TARGET_FILE, 'w') as f:
                 f.write('ERROR')
 
-        with open(OUTPUT_FILE, 'w') as f:
+        with open(TARGET_FILE, 'w') as f:
             f.write(value)
 
 
