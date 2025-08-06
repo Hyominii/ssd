@@ -54,15 +54,19 @@ def test_shell_write_short_number():
     pass
 
 
-def test_shell_read():
-    shell = TestShellApp()
-    lba = "00"
-    shell.read(lba)
-    ssd_result = "0x00000000"
-    print('\n')
-    print(f'[Read] LBA {lba} : {ssd_result}')
-    pass
+def test_shell_read(mocker):
+    # Arrange
+    ssd_driver_mock = mocker.Mock(spec=SSDDriver)
+    test_shell_app = TestShellApp(ssd_driver_mock)
 
+    test_shell_app._ssd_driver.run_ssd_read.return_value = TestShellApp.READ_SUCCESS
+
+    # Act
+    ret = test_shell_app.read(address=0)
+
+    # Assert
+    assert ret == TestShellApp.READ_SUCCESS
+    test_shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address=0)
 
 def test_shell_read_wrong_address():
     pass

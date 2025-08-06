@@ -12,28 +12,41 @@ class SSDDriver:
         else:
             return self.WRITE_ERROR
 
+    def run_ssd_read(self, address: int):
+        command = ['python', 'ssd.py', 'R', str(address)]
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            return self.READ_SUCCESS
+        else:
+            return self.READ_ERROR
+
 
 class TestShellApp:
     SUCCESS = 0
     WRITE_SUCCESS = SUCCESS
     WRITE_ERROR = -1
+    READ_SUCCESS = SUCCESS
+    READ_ERROR = -1
 
-    def __init__(self, ssd_driver = None):
+    def __init__(self, ssd_driver=None):
         if ssd_driver == None:
             ssd_driver = SSDDriver()
 
         self._ssd_driver = ssd_driver
 
     def read(self, address: int):
-        result = self._ssd.read(address) #TODO ssd_output.txt 생성 후 수정 필요
-        address = "0" + str(address) #TODO addr이 1자리수, 2자리수 포함한 일반화 필요
-        print(f'[Read] LBA {address} : {result}')
+        ret = self._ssd_driver.run_ssd_read(address=address)
+        return ret
+        # result = self._ssd.read(address) #TODO ssd_output.txt 생성 후 수정 필요
+        # address = "0" + str(address) #TODO addr이 1자리수, 2자리수 포함한 일반화 필요
+        # print(f'[Read] LBA {address} : {result}')
 
     def full_read(self):
         pass
 
     def write(self, address: int, value: str):
-        ret = self._ssd_driver.run_ssd_write(address = address, value = value)
+        ret = self._ssd_driver.run_ssd_write(address=address, value=value)
         return ret
 
     def full_write(self, value: str):
