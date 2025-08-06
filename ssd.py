@@ -1,5 +1,6 @@
 
 import os
+from abc import ABC, abstractmethod
 
 OUTPUT_FILE = 'ssd_output.txt'
 TARGET_FILE = 'ssd_nand.txt'
@@ -55,5 +56,3 @@ class SSD:
             with open(OUTPUT_FILE, 'w') as f:
                 f.write('ERROR')
         return
-
-
