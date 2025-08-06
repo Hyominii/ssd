@@ -9,16 +9,24 @@ ERROR_STRING = 'ERROR'
 
 class SSD:
     def __init__(self):
-        self.init_file(OUTPUT_FILE)
-        self.init_file(TARGET_FILE)
-        pass
+        self.init_output_file(OUTPUT_FILE)
+        self.init_target_file(TARGET_FILE)
 
-    def init_file(self, filename: str):
+    def init_target_file(self, filename: str):
         # 파일이 없으면 새로 생성
         # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
-        if not os.path.exists(filename):
-            with open(filename, "w") as f:
-                [f.write(BLANK_STRING + "\n") for _ in range(100)]
+        if os.path.exists(filename):
+            os.remove(filename)
+        with open(filename, "w") as f:
+            [f.write(BLANK_STRING + "\n") for _ in range(100)]
+        return
+
+    def init_output_file(self, filename: str):
+        # 파일이 없으면 새로 생성
+        if os.path.exists(filename):
+            os.remove(filename)
+        with open(filename, "w") as f:
+            f.write("")
         return
 
     def read(self, address: int) -> int:

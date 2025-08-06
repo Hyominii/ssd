@@ -11,6 +11,21 @@ def get_output_file() -> str:
         content_string = f.read()
     return content_string.rstrip("\n")
 
+def write_file(address:int, value: str):
+    ssd = SSD()
+    if address < 0 or address > 100:
+        with open(OUTPUT_FILE, "w") as f:
+            f.write(ERROR_STRING + "\n")
+    with open(TARGET_FILE, "r") as f:
+        lines = f.readlines()
+    # 줄이 address 줄보다 적으면 빈 줄로 채움
+    while len(lines) < address:
+        lines.append("\n")
+    lines[address] = value + "\n"
+    with open(TARGET_FILE, "w") as f:
+        f.writelines(lines)
+    return 0
+
 def test_read_file_exist():
     ssd = SSD()
     if os.path.exists(TARGET_FILE):
@@ -22,23 +37,23 @@ def test_read_file_exist():
 
 def test_write_file_exist():
     ssd = SSD()
-    if os.path.exists(WRITE_FILE):
-        os.remove(WRITE_FILE)
-    assert not os.path.exists(WRITE_FILE)
+    if os.path.exists(TARGET_FILE):
+        os.remove(TARGET_FILE)
+    assert not os.path.exists(TARGET_FILE)
     ssd.write(0,"00")
-    assert os.path.exists(WRITE_FILE)
-    os.remove(WRITE_FILE)
+    assert os.path.exists(TARGET_FILE)
+    os.remove(TARGET_FILE)
 
 
 def test_read_success_lba0():
     ssd = SSD()
-    ssd.write(0, TEST_VALUE)
+    write_file(0, TEST_VALUE)
     ssd.read(0)
     assert get_output_file() == TEST_VALUE
 
 def test_read_success_lba99():
     ssd = SSD()
-    ssd.write(99, TEST_VALUE)
+    write_file(99, TEST_VALUE)
     ssd.read(99)
     assert get_output_file() == TEST_VALUE
 
@@ -54,9 +69,9 @@ def test_read_blank_success():
 def test_read_lba_error():
     ssd = SSD()
     ssd.read(-1)
-    assert get_output_file() == ERROR_VALUE
+    assert get_output_file() == ERROR_STRING
 
 def test_read_invalid_lba_error():
     ssd = SSD()
     ssd.read('A')
-    assert get_output_file() == ERROR_VALUE
+    assert get_output_file() == ERROR_STRING
