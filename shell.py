@@ -1,30 +1,29 @@
 import shlex
 import subprocess
 
+SUCCESS = 0
+WRITE_SUCCESS = SUCCESS
+WRITE_ERROR = -1
+READ_SUCCESS = SUCCESS
+READ_ERROR = -1
 
 class SSDDriver:
-    SUCCESS = 0
-    WRITE_SUCCESS = SUCCESS
-    WRITE_ERROR = -1
-    READ_SUCCESS = SUCCESS
-    READ_ERROR = -1
-
     def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
         result = subprocess.run(command, capture_output=True, text=True)
 
         if result.returncode == 0:
-            return self.WRITE_SUCCESS
+            return WRITE_SUCCESS
         else:
-            return self.WRITE_ERROR
+            return WRITE_ERROR
 
     def run_ssd_read(self, address: str):
         command = ['python', 'ssd.py', 'R', str(address)]
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode == 0:
-            return self.READ_SUCCESS
+            return READ_SUCCESS
         else:
-            return self.READ_ERROR
+            return READ_ERROR
 
     def get_ssd_output(self):
         # ssd_output.txt에서 결과를 가져온다
@@ -32,12 +31,6 @@ class SSDDriver:
 
 
 class TestShellApp:
-    SUCCESS = 0
-    WRITE_SUCCESS = SUCCESS
-    WRITE_ERROR = -1
-    READ_SUCCESS = SUCCESS
-    READ_ERROR = -1
-
     def __init__(self, ssd_driver=None):
         if ssd_driver == None:
             ssd_driver = SSDDriver()
@@ -74,7 +67,7 @@ class TestShellApp:
 
     def read(self, address: str):
         if not self.is_address_valid(address):
-            return self.READ_ERROR
+            return READ_ERROR
 
         status = self._ssd_driver.run_ssd_read(address)
         ssd_output = self._ssd_driver.get_ssd_output()
@@ -83,14 +76,14 @@ class TestShellApp:
 
     def full_read(self):
         for address in range(0, 100):
-            if self._ssd_driver.run_ssd_read(address=address) == self.READ_ERROR:
-                return self.READ_ERROR
-        return self.READ_SUCCESS
+            if self._ssd_driver.run_ssd_read(address=address) == READ_ERROR:
+                return READ_ERROR
+        return READ_SUCCESS
 
     def write(self, address: str, value: str):
         formatted_value = self.format_hex_value(value)
         if formatted_value == None or not self.is_address_valid(address):
-            return self.WRITE_ERROR
+            return WRITE_ERROR
 
         ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
         print("[Write] Done")
@@ -98,9 +91,9 @@ class TestShellApp:
 
     def full_write(self, value: str):
         for address in range(0, 100):
-            if self._ssd_driver.run_ssd_write(address=address, value=value) == self.WRITE_ERROR:
-                return self.WRITE_ERROR
-        return self.WRITE_SUCCESS
+            if self._ssd_driver.run_ssd_write(address=address, value=value) == WRITE_ERROR:
+                return WRITE_ERROR
+        return WRITE_SUCCESS
 
     def exit(self):
         raise SystemExit(0)
@@ -125,44 +118,45 @@ class TestShellApp:
                     break
                 max_iterations -= 1
             command = input("Shell > ").strip()
-            if not command:
+            if self.is_valid_command(command) == False:
                 self.print_invalid_command()
                 continue
+
             parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
             cmd_name, *cmd_args = parts
-            if self.is_validate_command(cmd_name, cmd_args):
-                if cmd_name == "exit":
-                    self.exit()
-                elif cmd_name == "help":
-                    self.help()
-                elif cmd_name == "write":
-                    self.write(cmd_args[0], cmd_args[1])
-                elif cmd_name == "read":
-                    self.read(cmd_args[0])
-                elif cmd_name == "fullwrite":
-                    self.full_write(cmd_args[0])
-                elif cmd_name == "fullread":
-                    self.full_read()
-                else:
-                    self.print_invalid_command()
+            if cmd_name == "exit":
+                self.exit()
+            elif cmd_name == "help":
+                self.help()
+            elif cmd_name == "write":
+                self.write(cmd_args[0], cmd_args[1])
+            elif cmd_name == "read":
+                self.read(cmd_args[0])
+            elif cmd_name == "fullwrite":
+                self.full_write(cmd_args[0])
+            elif cmd_name == "fullread":
+                self.full_read()
 
-    def is_validate_command(self, cmd_name, cmd_args):
+    def is_valid_command(self, command):
+        if not command:
+            return False
+
+        parts = shlex.split(command)  # 공백을 기준으로 파싱하되 인용된 문자열도 처리
+        cmd_name, *cmd_args = parts
         if cmd_name == "exit" or cmd_name == "help" or cmd_name == "fullread":
             if len(cmd_args) > 0:
-                self.print_invalid_command()
                 return False
         elif cmd_name == "write":
             if len(cmd_args) != 2:
-                self.print_invalid_command()
                 return False
         elif cmd_name == "read":
             if len(cmd_args) != 1:
-                self.print_invalid_command()
                 return False
         elif cmd_name == "fullwrite":
             if len(cmd_args) != 1:
-                self.print_invalid_command()
                 return False
+        else:
+            return False
 
         return True
 
