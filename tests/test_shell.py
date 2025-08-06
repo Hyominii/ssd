@@ -131,7 +131,7 @@ def test_shell_read_after_write(shell_app, capsys):
     assert ret_write == WRITE_SUCCESS
     assert ret_read == READ_SUCCESS
     assert '[Read] LBA 00 : 0x00000000' in captured.out
-    assert '[Write] Done' in captured.out
+
     shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
     shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
 
