@@ -56,6 +56,6 @@ class SSD:
                 f.write('ERROR')
 
         with open(OUTPUT_FILE, 'w') as f:
-            f.write('0x00000001')
+            f.write(value)
 
 
