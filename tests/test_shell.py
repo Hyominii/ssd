@@ -344,17 +344,12 @@ def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     assert shell_app._ssd_driver.run_ssd_write.call_count == 150
     assert shell_app._ssd_driver.run_ssd_read.call_count == 150
 
-def test_shell_write_read_aging(shell_app, mocker: MockerFixture, capsys):
+def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 400
-    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 400
-    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+    shell_app = TestShellApp()
 
     # Act
     shell_app.write_read_aging()
 
     # Assert
     assert "PASS" in capsys.readouterr().out
-
-    assert shell_app._ssd_driver.run_ssd_write.call_count == 400
-    assert shell_app._ssd_driver.run_ssd_read.call_count == 400
