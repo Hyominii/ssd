@@ -35,6 +35,12 @@ def test_write_valid_address_zero(ssd):
     assert read_target()[addr] == value
 
 
+def test_write_success_lba99(ssd):
+    addr, value = 99, '0x12345678'
+    ssd.write(addr, value)
+    assert read_target()[addr] == value
+
+
 @pytest.mark.parametrize("addr", [0, 10, 19, 50, 99])
 def test_write_valid_address(ssd, addr):
     # arrange and act
@@ -58,3 +64,17 @@ def test_write_valid_values(ssd, value):
 
     # assert
     assert read_target()[addr] == value
+
+
+@pytest.mark.parametrize("invalid_addr", [-1, -15, 100, 150])
+def test_write_out_of_range_lba_error(ssd, invalid_addr):
+    value = '0x12345678'
+    ssd.write(invalid_addr, value)
+    assert read_output() == ERROR_STRING
+
+
+@pytest.mark.parametrize("invalid_addr", ['A', '10', '50', 'AAA'])
+def test_write_invalid_lba_error(ssd, invalid_addr):
+    value = '0x12345678'
+    ssd.write(invalid_addr, value)
+    assert read_output() == ERROR_STRING
