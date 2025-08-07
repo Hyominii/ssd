@@ -53,7 +53,7 @@ class SSD:
         # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
         if os.path.exists(TARGET_FILE):
             return
-        self._target_file_handler.write_lines([(BLANK_STRING) for _ in range(100)])
+        self._target_file_handler.write_lines([BLANK_STRING for _ in range(100)])
         return
 
     def read(self, address: int) -> int:
@@ -93,7 +93,8 @@ class SSD:
         if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
             self._output_file_handler.write(ERROR_STRING)
             return
-        lines = self._target_file_handler.real_all_lines()
+        lines = self._target_file_handler.read_all_lines()
+        lines[address] = value
         self._target_file_handler.write_lines(lines)
 
 class ReadCommand(Command):
