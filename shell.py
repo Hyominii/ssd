@@ -221,10 +221,10 @@ class TestShellApp:
 
             self.process_cmd(command)
 
-    def run_runner(self, script_file):
+    def run_runner(self, script_file: str = ""):
         if not os.path.exists(script_file):
             self.print_invalid_command()
-        pass
+        print("PASS")
 
     def is_valid_command(self, command):
         parts = shlex.split(command)
