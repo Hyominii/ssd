@@ -227,7 +227,6 @@ def test_shell_subprocess_cmd():
     pass
 
 
-# @pytest.mark.skip
 def test_shell_exit(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
     exit_mock = mocker.patch("shell.TestShellApp.exit", side_effect=SystemExit(0))
@@ -334,6 +333,7 @@ def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, caps
     # Assert
     assert "Pass" in capsys.readouterr().out
 
+
 def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     shell_app = TestShellApp()
@@ -350,6 +350,7 @@ def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture
         os.remove(temp_file_path)
     # Assert
     assert "1_  ___  RUN...Pass" in capsys.readouterr().out
+
 
 def test_shell_runner_with_testfile_incorrect_cmd(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -369,6 +370,7 @@ def test_shell_runner_with_testfile_incorrect_cmd(shell_app, mocker: MockerFixtu
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
 
+
 def test_shell_runner_without_testfile(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     shell_app = TestShellApp()
@@ -378,6 +380,7 @@ def test_shell_runner_without_testfile(shell_app, mocker: MockerFixture, capsys)
 
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
+
 
 def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -390,17 +393,28 @@ def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, caps
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
 
+
+@pytest.mark.parametrize("size", ["0.5", "-1.5", "0xa", "-0x1"])
+def test_shell_erase_invalid_size(shell_app, size):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+
+    # Act
+    ret_fail = shell_app.erase(address="0", lba_size=size)
+
+    # Assert
+    assert ERASE_ERROR == ret_fail
+
+
 def test_shell_erase(shell_app):
     # Arrange
     shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
 
     # Act
     ret_pass = shell_app.erase(address="0", lba_size="1")
-    ret_fail = shell_app.erase(address="0", lba_size="0.5")
 
     # Assert
     assert ERASE_SUCCESS == ret_pass
-    assert ERASE_ERROR == ret_fail
 
 
 def test_shell_erase_resize(shell_app, mocker):
@@ -428,6 +442,7 @@ def test_shell_erase_resize_minus(shell_app, mocker):
     assert ERASE_SUCCESS == ret_pass
     shell_app._erase_in_chunks.assert_called_once_with(start_lba=11, size=20)
 
+
 def test_shell_erase_range(shell_app, mocker):
     # Arrange
     shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
@@ -440,6 +455,7 @@ def test_shell_erase_range(shell_app, mocker):
     assert ERASE_SUCCESS == ret_pass
     shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
 
+
 def test_shell_erase_range_reverse(shell_app, mocker):
     # Arrange
     shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
@@ -451,3 +467,16 @@ def test_shell_erase_range_reverse(shell_app, mocker):
     # Assert
     assert ERASE_SUCCESS == ret_pass
     shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
+
+
+@pytest.mark.parametrize("range", [("-1", "10"), ("1", "100"), ("1.5", "10"), ("10", "10.5")])
+def test_shell_erase_invalid_range(shell_app, mocker, range):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase_range(start_lba=range[0], end_lba=range[1])
+
+    # Assert
+    assert ERASE_ERROR == ret_pass
