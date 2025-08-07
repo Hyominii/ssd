@@ -331,8 +331,6 @@ class TestShellApp:
     def is_size_valid(self, lba_size):
         try:
             lba_size = int(lba_size)
-            if abs(lba_size) < 1:  # size는 1이상이어야 정상동작
-                return False
             return True
         except ValueError:
             return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
