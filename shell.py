@@ -10,18 +10,29 @@ WRITE_SUCCESS = SUCCESS
 WRITE_ERROR = ERROR
 READ_SUCCESS = SUCCESS
 READ_ERROR = ERROR
+ERASE_SUCCESS = SUCCESS
+ERASE_ERROR = ERROR
 ROOT_DIR = os.path.dirname(__file__)
 
 
 class SSDDriver:
-    def run_ssd_write(self, address: str, value: str):
-        command = ['python', 'ssd.py', 'W', str(address), str(value)]
+    def run_ssd_write(self, address: str, lba_size: str):
+        command = ['python', 'ssd.py', 'W', str(address), str(lba_size)]
         result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
 
         if result.returncode == 0:
             return WRITE_SUCCESS
         else:
             return WRITE_ERROR
+
+    def run_ssd_erase(self, address: str, lba_size: str):
+        command = ['python', 'ssd.py', 'E', str(address), str(lba_size)]
+        result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            return ERASE_SUCCESS
+        else:
+            return ERASE_ERROR
 
     def run_ssd_read(self, address: str):
         command = ['python', 'ssd.py', 'R', str(address)]
@@ -126,6 +137,16 @@ class TestShellApp:
             if self._ssd_driver.run_ssd_write(address=str(address), value=formatted_value) == WRITE_ERROR:
                 return WRITE_ERROR
         return WRITE_SUCCESS
+
+    def erase(self, address: str, lba_size: str):
+        # lba_size 검증 추가
+        if not self.is_address_valid(address) :
+            return ERASE_ERROR
+        # if not self.is_size_valid(lba_size):
+        #     return ERASE_ERROR
+
+        ret = self._ssd_driver.run_ssd_erase(address=address, lba_size=lba_size)
+        return ret
 
     def _read_and_compare(self, address: str, written_value: str):
         read_status = self.read(address)
@@ -271,6 +292,9 @@ class TestShellApp:
 
     def print_invalid_command(self):
         print("INVALID COMMAND")
+
+    def is_size_valid(self, lba_size):
+        pass
 
 
 if __name__ == "__main__":
