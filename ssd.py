@@ -3,6 +3,8 @@ import sys
 
 from abc import ABC, abstractmethod
 
+from command import CommandInvoker, Command
+
 OUTPUT_FILE = 'ssd_output.txt'
 TARGET_FILE = 'ssd_nand.txt'
 BLANK_STRING = "0x00000000"
@@ -102,27 +104,62 @@ class SSD:
             f.writelines(line + '\n' for line in lines)
 
 
+class ReadCommand(Command):
+    def __init__(self, ssd: SSD, address: int):
+        self.ssd = ssd
+        self._address = address
+
+    def execute(self):
+        self.ssd.read(self._address)
+
+
+class WriteCommand(Command):
+    def __init__(self, ssd: SSD, address: int, value: str):
+        self.ssd = ssd
+        self._address = address
+        self._value = value
+
+    def execute(self):
+        self.ssd.write(self._address, self._value)
+
+
+class EraseCommand(Command):
+    def __init__(self, ssd: SSD):
+        self.ssd = ssd
+
+    def execute(self):
+        self.ssd.erase()
+
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: ssd.py <command> <arg1> [arg2]")
         sys.exit(1)
 
-    command = sys.argv[1]
+    cmd = sys.argv[1].upper()
     arg1 = sys.argv[2]
     arg2 = sys.argv[3] if len(sys.argv) > 3 else None
 
     ssd = SSD()
+    invoker = CommandInvoker()
 
-    if command == "R":
-        ssd.read(int(arg1))
-    elif command == "W":
-        if arg2 is None:
-            print("Missing value for write")
-            sys.exit(1)
-        ssd.write(int(arg1), arg2)
+    if cmd == "R":
+        #ssd.read(int(arg1))
+        invoker.add_command(ReadCommand(ssd, int(arg1)))
+    elif cmd == "W":
+        #if arg2 is None:
+        #    print("Missing value for write")
+        #    sys.exit(1)
+        #ssd.write(int(arg1), arg2)
+        invoker.add_command(WriteCommand(ssd, int(arg1), arg2))
+    elif cmd == "E":
+        invoker.add_command(EraseCommand(ssd))
     else:
-        print(f"Unknown command: {command}")
+        print(f"Unknown command: {cmd}")
         sys.exit(1)
+
+    #flush
+    invoker.flush()
 
 
 if __name__ == "__main__":
