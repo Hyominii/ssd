@@ -4,16 +4,18 @@ import sys
 from abc import ABC, abstractmethod
 from file_handler import SimpleFileHandler, MultilineFileWriter
 from command import CommandInvoker, Command
+from pathlib import Path
 
-OUTPUT_FILE = 'ssd_output.txt'
-TARGET_FILE = 'ssd_nand.txt'
+
 BLANK_STRING = "0x00000000"
 ERROR_STRING = 'ERROR'
 SSD_SIZE = 100
 MIN_VALUE = 0x00000000
 MAX_VALUE = 0xFFFFFFFF
 BUFFER_DIR = 'buffer'
-
+BASE_DIR = Path(__file__).resolve().parent
+OUTPUT_FILE = 'ssd_output.txt'
+TARGET_FILE = 'ssd_nand.txt'
 
 class SSD:
     _instance = None
@@ -26,10 +28,10 @@ class SSD:
     def __init__(self):
         if not hasattr(self, 'initialized'):
             self.initialized = True
-            self._target_file_handler = MultilineFileWriter(SimpleFileHandler(TARGET_FILE))
-            self._output_file_handler = SimpleFileHandler(OUTPUT_FILE)
-            self.init_target_file()
             self.init_command_buffer()
+            self._target_file_handler = MultilineFileWriter(SimpleFileHandler(TARGET_FILE))
+            self.init_target_file()
+            self._output_file_handler = SimpleFileHandler(OUTPUT_FILE)
 
     def init_command_buffer(self):
         buffer_dir = BUFFER_DIR
