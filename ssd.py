@@ -27,9 +27,16 @@ class SSD:
 
         # 2. 파일 생성
         for i in range(1, 6):
-            file_path = os.path.join(buffer_dir, f"{i}_empty")
-            with open(file_path, "w") as f:
-                f.write(f"")
+            # 해당 i로 시작하는 파일이 이미 존재하는지 확인
+            exists = any(
+                filename.startswith(f"{i}_")
+                for filename in os.listdir(buffer_dir)
+            )
+
+            if not exists:
+                file_path = os.path.join(buffer_dir, f"{i}_empty")
+                with open(file_path, "w") as f:
+                    f.write("")
 
     def init_target_file(self, filename: str):
         # 파일이 없으면 새로 생성
@@ -126,18 +133,22 @@ class ReadCommand(Command):
 
 
 class WriteCommand(Command):
-    def __init__(self, ssd: SSD, address: int, value: str):
+    def __init__(self, ssd: SSD, address: int, value: str, buffer_num: int):
         self.ssd = ssd
         self._address = address
         self._value = value
+        self.rename_buffer(buffer_num, 'W', address, value)
 
     def execute(self):
         self.ssd.write(self._address, self._value)
 
 
 class EraseCommand(Command):
-    def __init__(self, ssd: SSD):
+    def __init__(self, ssd: SSD, address: int, size: int, buffer_num: int):
         self.ssd = ssd
+        self._address = address
+        self._sise = size
+        self.rename_buffer(buffer_num, 'E', address, size)
 
     def execute(self):
         self.ssd.erase()
@@ -158,9 +169,9 @@ def main():
     if cmd == "R":
         invoker.add_command(ReadCommand(ssd, int(arg1)))
     elif cmd == "W":
-        invoker.add_command(WriteCommand(ssd, int(arg1), arg2))
+        invoker.add_command(WriteCommand(ssd, int(arg1), arg2, invoker.num_commands() + 1))
     elif cmd == "E":
-        invoker.add_command(EraseCommand(ssd))
+        invoker.add_command(EraseCommand(ssd, int(arg1), int(arg2), invoker.num_commands() + 1))
     elif cmd == "F":
         invoker.flush()
     else:
