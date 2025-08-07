@@ -2,6 +2,7 @@ import shlex
 import subprocess
 import random
 import os
+import sys
 
 SUCCESS = 0
 ERROR = -1
@@ -198,6 +199,16 @@ class TestShellApp:
         return SUCCESS
 
     def run(self, max_iterations: int = None):
+        if max_iterations is not None:
+            self.run_shell(max_iterations)
+
+        if len(sys.argv) > 1:
+            script_file = sys.argv[1]
+            self.run_runner(script_file)
+        else:
+            self.run_shell(max_iterations)
+
+    def run_shell(self, max_iterations: int = None):
         print(f"안녕하세요, SSD 검증용 Test Shell App을 시작합니다.\n")
 
         while True:
@@ -211,6 +222,9 @@ class TestShellApp:
                 continue
 
             self.process_cmd(command)
+
+    def run_runner(self, script_file):
+        pass
 
     def is_valid_command(self, command):
         parts = shlex.split(command)
