@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from file_handler import SimpleFileHandler, MultilineFileWriter
 from command import CommandInvoker, Command
 
+from file_handler import SimpleFileHandler, MultilineFileWriter
 
 OUTPUT_FILE = 'ssd_output.txt'
 TARGET_FILE = 'ssd_nand.txt'
