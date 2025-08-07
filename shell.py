@@ -63,21 +63,27 @@ class TestShellApp:
         self._ssd_output_cache = None
 
         self.command_specs = {
-            "exit": (0, lambda: self.exit()),
-            "help": (0, lambda: self.help()),
-            "fullread": (0, lambda: self.full_read()),
-            "write": (2, lambda args: self.write(args[0], args[1])),
-            "read": (1, lambda args: self.read(args[0])),
-            "erase": (2, lambda args: self.erase(args[0], args[1])),
-            "erase_range": (2, lambda args: self.erase_range(args[0], args[1])),
-            "fullwrite": (1, lambda args: self.full_write(args[0])),
-            "1_": (0, lambda: self.full_write_and_read_compare()),
-            "1_FullWriteAndReadCompare": (0, lambda: self.full_write_and_read_compare()),
-            "2_": (0, lambda: self.partial_lba_write()),
-            "2_PartialLBAWrite": (0, lambda: self.partial_lba_write()),
-            "3_": (0, lambda: self.write_read_aging()),
-            "3_WriteReadAging": (0, lambda: self.write_read_aging()),
+            "exit": {"args": 0, "func": lambda: self.exit(), "tags": ""},
+            "help": {"args": 0, "func": lambda: self.help(), "tags": ""},
+            "fullread": {"args": 0, "func": lambda: self.full_read(), "tags": ""},
+            "write": {"args": 2, "func": lambda args: self.write(args[0], args[1]), "tags": ""},
+            "read": {"args": 1, "func": lambda args: self.read(args[0]), "tags": ""},
+            "erase": {"args": 2, "func": lambda args: self.erase(args[0], args[1]), "tags": ""},
+            "erase_range": {"args": 2, "func": lambda args: self.erase_range(args[0], args[1]), "tags": ""},
+            "fullwrite": {"args": 1, "func": lambda args: self.full_write(args[0]), "tags": ""},
+
+            # scripts-tagged commands
+            "1_": {"args": 0, "func": lambda: self.full_write_and_read_compare(), "tags": "scripts"},
+            "1_FullWriteAndReadCompare": {"args": 0, "func": lambda: self.full_write_and_read_compare(),
+                                          "tags": "scripts"},
+            "2_": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "scripts"},
+            "2_PartialLBAWrite": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "scripts"},
+            "3_": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "scripts"},
+            "3_WriteReadAging": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "scripts"},
+            "4_": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "scripts"},
+            "4_EraseAndWriteAging": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "scripts"},
         }
+        self._is_runner = False
 
     def is_address_valid(self, address: str):
         try:
@@ -116,7 +122,8 @@ class TestShellApp:
             return status
         self._ssd_output_cache = self._ssd_driver.get_ssd_output()
         read_result = f'[Read] LBA {address.zfill(2)} : {self._ssd_output_cache}'
-        print(read_result)
+        if not self._is_runner:
+            print(read_result)
         return status
 
     def full_read(self):
@@ -201,9 +208,7 @@ class TestShellApp:
                 self.write(str(address), write_value)
             for address in range(block, block + 5):
                 if self._read_and_compare(str(address), write_value) == False:
-                    print("FAIL")
                     return ERROR
-        print("PASS")
         return SUCCESS
 
     def partial_lba_write(self):
@@ -215,9 +220,7 @@ class TestShellApp:
             self.write("2", "0x12345678")
             for address in range(0, 5):
                 if self._read_and_compare(str(address), "0x12345678") == False:
-                    print("FAIL")
                     return ERROR
-        print("PASS")
         return SUCCESS
 
     def write_read_aging(self):
@@ -228,9 +231,27 @@ class TestShellApp:
             self.write("99", write_value)
 
             if self._read_and_compare("0", write_value) == False:
-                print("FAIL")
                 return ERROR
             if self._read_and_compare("99", write_value) == False:
+                return ERROR
+        return SUCCESS
+
+    def erase_write_test(self):
+        self.erase_range("0", "3")
+        for x in range(2, 97, 2):
+            self.write(str(x), "0x12345678")
+            self.write(str(x), "0xaabbccdd")
+
+            self.erase_range(str(x), "3")
+
+            for i in range(3):
+                if not self._read_and_compare(str(x + i), "0x00000000"):
+                    return ERROR
+
+    def erase_write_aging(self):
+        for iter in range(30):
+            ret = self.erase_write_test()
+            if ret == ERROR:
                 print("FAIL")
                 return ERROR
         print("PASS")
@@ -252,6 +273,7 @@ class TestShellApp:
         print("  1_FullWriteAndReadCompare          : 전체 LBA 쓰기 및 비교")
         print("  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회")
         print("  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회")
+        print("  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함")
         print("  help                               : 도움말 출력")
         print("  exit                               : 종료")
         return SUCCESS
@@ -265,6 +287,7 @@ class TestShellApp:
         return
 
     def run_shell(self, max_iterations: int = None):
+        self._is_runner = False
         print(f"안녕하세요, SSD 검증용 Test Shell App을 시작합니다.\n")
 
         while True:
@@ -280,9 +303,24 @@ class TestShellApp:
             self.process_cmd(command)
 
     def run_runner(self, script_file: str = ""):
+        self._is_runner = True
         if not os.path.exists(script_file):
             self.print_invalid_command()
-        print("PASS")
+            return
+
+        with open(script_file, 'r') as f:
+            commands = [line.strip() for line in f if line.strip()]
+
+        if not commands:
+            self.print_invalid_command()
+            return
+
+        for command in commands:
+            if self.is_valid_command(command) == False:
+                self.print_invalid_command()
+                return
+            if self.process_cmd(command) == False:
+                return
 
     def is_valid_command(self, command):
         parts = shlex.split(command)
@@ -294,7 +332,7 @@ class TestShellApp:
         if not spec:
             return False
 
-        expected_arg_count, _ = spec
+        expected_arg_count = spec["args"]
         return len(cmd_args) == expected_arg_count
 
     def process_cmd(self, command):
@@ -309,10 +347,17 @@ class TestShellApp:
             self.print_invalid_command()
             return
 
-        expected_arg_count, handler = spec
+        expected_arg_count = spec["args"]
+        handler = spec["func"]
+        tags = spec["tags"]
         if len(cmd_args) != expected_arg_count:
             self.print_invalid_command()
             return
+
+        if self._is_runner:
+            if tags != "scripts":
+                self.print_invalid_command()
+                return
 
         try:
             if cmd_name in ["write", "erase", "erase_range"]:
@@ -320,7 +365,16 @@ class TestShellApp:
                 if ret == SUCCESS:
                     print(f"[{cmd_name.capitalize()}] Done")
             else:
+                if self._is_runner:
+                    print(f"{cmd_name}  ___  RUN...", flush=True, end="")
                 ret = handler(cmd_args) if expected_arg_count else handler()
+                if tags == "scripts":
+                    if ret == SUCCESS:
+                        print("Pass")
+                    else:
+                        print("FAIL!")
+                        return False
+
         except Exception:
             ret = ERROR
 
