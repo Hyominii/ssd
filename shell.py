@@ -80,6 +80,8 @@ class TestShellApp:
             "2_PartialLBAWrite": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "runner"},
             "3_": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "runner"},
             "3_WriteReadAging": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "runner"},
+            "4_": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "runner"},
+            "4_EraseAndWriteAging": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "runner"},
         }
         self._is_runner = False
 
@@ -232,6 +234,26 @@ class TestShellApp:
                 return ERROR
             if self._read_and_compare("99", write_value) == False:
                 return ERROR
+        return SUCCESS
+
+    def erase_write_test(self):
+        for x in range(2, 97, 2):
+            self.write(str(x), "0x12345678")
+            self.write(str(x), "0xaabbccdd")
+
+            self.erase_range(str(x), 3)
+
+            for i in range(3):
+                if not self._read_and_compare(str(x + i), "0x00000000"):
+                    return ERROR
+
+    def erase_write_aging(self):
+        for iter in range(30):
+            ret = self.erase_write_test()
+            if ret == ERROR:
+                print("FAIL")
+                return ERROR
+        print("PASS")
         return SUCCESS
 
     def exit(self):
