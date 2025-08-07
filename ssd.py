@@ -29,6 +29,7 @@ class SSD:
             self.initialized = True
             self._target_file_handler = MultilineFileWriter(SimpleFileHandler(TARGET_FILE))
             self._output_file_handler = SimpleFileHandler(OUTPUT_FILE)
+            self._write_output("")
             self.init_target_file()
             self.init_command_buffer()
 
@@ -47,6 +48,7 @@ class SSD:
         # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
         if os.path.exists(TARGET_FILE):
             return
+        self._write_lines([(BLANK_STRING + "\n") for _ in range(100)])
         self._target_file_handler.write_lines([(BLANK_STRING) for _ in range(100)])
         return
 
