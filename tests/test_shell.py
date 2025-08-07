@@ -247,12 +247,15 @@ def test_shell_help(capsys):
         "팀명: BestReviewer",
         "팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈",
         "사용 가능한 명령어:",
-        "  write <LBA> <Value>      : 특정 LBA에 값 저장",
-        "  read <LBA>               : 특정 LBA 값 읽기",
-        "  fullwrite <Value>        : 전체 LBA에 동일 값 저장",
-        "  fullread                 : 전체 LBA 읽기 및 출력",
-        "  help                     : 도움말 출력",
-        "  exit                     : 종료",
+        "  write <LBA> <Value>       : 특정 LBA에 값 저장",
+        "  read <LBA>                : 특정 LBA 값 읽기",
+        "  fullwrite <Value>         : 전체 LBA에 동일 값 저장",
+        "  fullread                  : 전체 LBA 읽기 및 출력",
+        "  1_FullWriteAndReadCompare : 전체 LBA 쓰기 및 비교",
+        "  2_PartialLBAWrite         : LBA 0 ~ 4 쓰기 및 읽기 30회",
+        "  3_WriteReadAging          : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
+        "  help                      : 도움말 출력",
+        "  exit                      : 종료"
     ]
 
     for line in expected_lines:
