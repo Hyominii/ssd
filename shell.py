@@ -280,6 +280,19 @@ class TestShellApp:
     def run_runner(self, script_file: str = ""):
         if not os.path.exists(script_file):
             self.print_invalid_command()
+            return
+
+        with open(script_file, 'r') as f:
+            commands = [line.strip() for line in f if line.strip()]
+
+        if not commands:
+            self.print_invalid_command()
+            return
+
+        for command in commands:
+            if self.is_valid_command(command) == False:
+                self.print_invalid_command()
+                return
         print("PASS")
 
     def is_valid_command(self, command):
