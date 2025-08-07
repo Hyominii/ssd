@@ -20,7 +20,6 @@ def test_shell_write_subprocess(shell_app):
 
     # Assert
     assert ret == WRITE_SUCCESS
-    shell_app._ssd_driver.run_ssd_write.assert_called_once()
     shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
 
 
@@ -58,7 +57,6 @@ def test_shell_write_test_valid_address(shell_app, valid_address):
 
     # Assert
     assert ret == WRITE_SUCCESS
-    shell_app._ssd_driver.run_ssd_write.assert_called_once()
     shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address=valid_address, value="0x00000001")
 
 @pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff"])
