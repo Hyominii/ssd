@@ -330,3 +330,35 @@ def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, caps
 
     # Assert
     assert "PASS" in capsys.readouterr().out
+
+def test_shell_runner_with_testfile(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    scipt_file = f"{ROOT_DIR}\shell_scripts.txt"
+    shell_app.run_runner(scipt_file)
+
+    # Assert
+    assert "PASS" in capsys.readouterr().out
+
+def test_shell_runner_without_testfile(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    shell_app.run_runner()
+
+    # Assert
+    assert "INVALID COMMAND" in capsys.readouterr().out
+
+def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    scipt_file = f"{ROOT_DIR}\shell_scripts_.txt"
+    shell_app.run_runner(scipt_file)
+
+    # Assert
+    assert "INVALID COMMAND" in capsys.readouterr().out
