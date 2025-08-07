@@ -42,14 +42,14 @@ class FileDecorator(FileHandler):
 
 class MultilineFileWriter(FileDecorator):
     def write_lines(self, lines: list):
-        full_data = "\n".join(lines)
+        lines_with_newlines = [str(line) + '\n' for line in lines]
         with open(self._wrapped_handler._filename, 'w', encoding='utf-8') as f:
-            f.write(full_data)
+            f.writelines(lines_with_newlines)
 
-    def real_all_lines(self) -> list:
+    def read_all_lines(self) -> list:
         with open(self._wrapped_handler._filename, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+            lines = f.read().split("\n")
             return lines
 
     def read_specific_line(self, line_number: int) -> str:
-        return self.real_all_lines()[line_number].strip()
+        return self.read_all_lines()[line_number].strip()
