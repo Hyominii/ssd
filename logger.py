@@ -1,8 +1,10 @@
 import os
+import zipfile
 import sys
 
 from datetime import datetime
 from typing import Optional
+from utils import find_files_by_pattern
 
 
 class Formatter:
@@ -45,11 +47,27 @@ class FileHandler(BaseHandler):
 
     def _rotate(self):
         self.file.close()
+
+        self._compress_existing_rotate_log()
+
         timestamp = datetime.now().strftime("%y%m%d_%Hh_%Mm_%Ss")
-        rotated_name = f"until_{timestamp}.log"
-        os.rename(self.log_path, f"{self.dirname}/{rotated_name}")
+        rotate_file_path = f"{self.dirname}/until_{timestamp}.log"
+        os.rename(self.log_path, rotate_file_path)
 
         self._open_file()
+
+    def _compress_existing_rotate_log(self):
+        rotate_log_files = find_files_by_pattern(self.dirname, "until*log")
+        if len(rotate_log_files) < 1:
+            return
+
+        for log_file in rotate_log_files:
+            zip_path = log_file.with_name(f"{log_file.stem}.zip")
+
+            with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
+                zipf.write(log_file, arcname=log_file.name)
+
+            os.remove(log_file)
 
     def emit(self, formatted_message):
         self.file.flush()
