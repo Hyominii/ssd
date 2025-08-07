@@ -69,6 +69,7 @@ class TestShellApp:
             "write": (2, lambda args: self.write(args[0], args[1])),
             "read": (1, lambda args: self.read(args[0])),
             "erase": (2, lambda args: self.erase(args[0], args[1])),
+            "erase_range": (2, lambda args: self.erase_range(args[0], args[1])),
             "fullwrite": (1, lambda args: self.full_write(args[0])),
             "1_": (0, lambda: self.full_write_and_read_compare()),
             "1_FullWriteAndReadCompare": (0, lambda: self.full_write_and_read_compare()),
@@ -312,7 +313,7 @@ class TestShellApp:
             return
 
         try:
-            if cmd_name in ["write", "erase"]:
+            if cmd_name in ["write", "erase", "erase_range"]:
                 ret = handler(cmd_args)
                 if ret == SUCCESS:
                     print(f"[{cmd_name.capitalize()}] Done")
