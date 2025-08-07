@@ -299,7 +299,7 @@ def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, cap
     shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 100
     shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
     # Act
-    shell_app.process_cmd("1_FullWriteAndReadCompare", "runner")
+    shell_app.process_cmd("1_FullWriteAndReadCompare")
 
     # Assert
     assert "Pass" in capsys.readouterr().out
@@ -315,7 +315,7 @@ def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
 
     # Act
-    shell_app.process_cmd("2_PartialLBAWrite", "runner")
+    shell_app.process_cmd("2_PartialLBAWrite")
 
     # Assert
     assert "Pass" in capsys.readouterr().out
@@ -329,7 +329,7 @@ def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, caps
     shell_app = TestShellApp()
 
     # Act
-    shell_app.process_cmd("3_WriteReadAging", "runner")
+    shell_app.process_cmd("3_WriteReadAging")
 
     # Assert
     assert "Pass" in capsys.readouterr().out
