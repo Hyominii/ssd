@@ -237,11 +237,12 @@ class TestShellApp:
         return SUCCESS
 
     def erase_write_test(self):
+        self.erase_range("0", "3")
         for x in range(2, 97, 2):
             self.write(str(x), "0x12345678")
             self.write(str(x), "0xaabbccdd")
 
-            self.erase_range(str(x), 3)
+            self.erase_range(str(x), "3")
 
             for i in range(3):
                 if not self._read_and_compare(str(x + i), "0x00000000"):
@@ -270,6 +271,7 @@ class TestShellApp:
         print("  1_FullWriteAndReadCompare : 전체 LBA 쓰기 및 비교")
         print("  2_PartialLBAWrite         : LBA 0 ~ 4 쓰기 및 읽기 30회")
         print("  3_WriteReadAging          : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회")
+        print("  4_EraseAndWriteAging      : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함")
         print("  help                      : 도움말 출력")
         print("  exit                      : 종료")
         return SUCCESS
