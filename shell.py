@@ -4,13 +4,18 @@ import random
 import os
 import sys
 
+ROOT_DIR = os.path.dirname(__file__)
+
 SUCCESS = 0
 ERROR = -1
 WRITE_SUCCESS = SUCCESS
 WRITE_ERROR = ERROR
 READ_SUCCESS = SUCCESS
 READ_ERROR = ERROR
-ROOT_DIR = os.path.dirname(__file__)
+
+ERASE_SUCCESS = SUCCESS
+ERASE_ERROR = ERROR
+MAX_ERASE_SIZE = 10
 
 
 class SSDDriver:
@@ -22,6 +27,15 @@ class SSDDriver:
             return WRITE_SUCCESS
         else:
             return WRITE_ERROR
+
+    def run_ssd_erase(self, address: str, lba_size: str):
+        command = ['python', 'ssd.py', 'E', str(address), str(lba_size)]
+        result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            return ERASE_SUCCESS
+        else:
+            return ERASE_ERROR
 
     def run_ssd_read(self, address: str):
         command = ['python', 'ssd.py', 'R', str(address)]
@@ -54,6 +68,8 @@ class TestShellApp:
             "fullread": (0, lambda: self.full_read()),
             "write": (2, lambda args: self.write(args[0], args[1])),
             "read": (1, lambda args: self.read(args[0])),
+            "erase": (2, lambda args: self.erase(args[0], args[1])),
+            "erase_range": (2, lambda args: self.erase_range(args[0], args[1])),
             "fullwrite": (1, lambda args: self.full_write(args[0])),
             "1_": (0, lambda: self.full_write_and_read_compare()),
             "1_FullWriteAndReadCompare": (0, lambda: self.full_write_and_read_compare()),
@@ -126,6 +142,46 @@ class TestShellApp:
             if self._ssd_driver.run_ssd_write(address=str(address), value=formatted_value) == WRITE_ERROR:
                 return WRITE_ERROR
         return WRITE_SUCCESS
+
+    def erase(self, address: str, lba_size: str):
+        if not self.is_address_valid(address) or not self.is_size_valid(lba_size):
+            return ERASE_ERROR
+
+        start_lba, size = self.range_resize(address, lba_size)
+        status = self._erase_in_chunks(start_lba=start_lba, size=size)
+        return status
+
+    def erase_range(self, start_lba: str, end_lba: str):
+        if not self.is_address_valid(start_lba) or not self.is_address_valid(end_lba):
+            return ERASE_ERROR
+
+        low, high = sorted((int(start_lba), int(end_lba)))
+
+        low = max(0, low)
+        high = min(99, high)
+
+        # Erase size 계산
+        size = high - low + 1
+        if size <= 0: return ERASE_ERROR
+
+        status = self._erase_in_chunks(start_lba=low, size=size)
+        return status
+
+    def _erase_chunk(self, start_lba: int, size: int):
+        status = self._ssd_driver.run_ssd_erase(address=str(start_lba), lba_size=str(size))
+        # end = start + size - 1
+        # print(f'[Erase] LBA {start:02d} ~ {end:02d}')
+        return status
+
+    def _erase_in_chunks(self, start_lba: int, size: int):
+        """MAX_ERASE_SIZE 단위로 잘라서 _erase_chunk 호출."""
+        for offset in range(0, size, MAX_ERASE_SIZE):
+            chunk_size = min(MAX_ERASE_SIZE, size - offset)
+            chunk_start = start_lba + offset
+            status = self._erase_chunk(chunk_start, chunk_size)
+            if status == ERROR:
+                return ERASE_ERROR
+        return ERASE_SUCCESS
 
     def _read_and_compare(self, address: str, written_value: str):
         read_status = self.read(address)
@@ -257,10 +313,10 @@ class TestShellApp:
             return
 
         try:
-            if cmd_name == "write":
+            if cmd_name in ["write", "erase", "erase_range"]:
                 ret = handler(cmd_args)
                 if ret == SUCCESS:
-                    print("[Write] Done")
+                    print(f"[{cmd_name.capitalize()}] Done")
             else:
                 ret = handler(cmd_args) if expected_arg_count else handler()
         except Exception:
@@ -271,6 +327,29 @@ class TestShellApp:
 
     def print_invalid_command(self):
         print("INVALID COMMAND")
+
+    def is_size_valid(self, lba_size):
+        try:
+            lba_size = int(lba_size)
+            if abs(lba_size) < 1:  # size는 1이상이어야 정상동작
+                return False
+            return True
+        except ValueError:
+            return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
+
+    def range_resize(self, address: str, lba_size: str):
+        start, size = int(address), int(lba_size)
+        if size > 0:
+            max_blocks = 100 - start
+            block_count = min(size, max_blocks)
+            erase_start = start
+
+        else:  # 음수 방향: 뒤로 abs(cnt) 블록
+            max_blocks = start + 1
+            block_count = min(-size, max_blocks)
+            # 음수 방향이므로 작은 주소부터 시작
+            erase_start = start - (block_count - 1)
+        return (erase_start, block_count)
 
 
 if __name__ == "__main__":

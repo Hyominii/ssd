@@ -59,6 +59,7 @@ def test_shell_write_test_valid_address(shell_app, valid_address):
     assert ret == WRITE_SUCCESS
     shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address=valid_address, value="0x00000001")
 
+
 @pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff"])
 def test_shell_write_valid_value(shell_app, valid_value):
     # Arrange
@@ -362,3 +363,65 @@ def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, caps
 
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
+
+def test_shell_erase(shell_app):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+
+    # Act
+    ret_pass = shell_app.erase(address="0", lba_size="1")
+    ret_fail = shell_app.erase(address="0", lba_size="0.5")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    assert ERASE_ERROR == ret_fail
+
+
+def test_shell_erase_resize(shell_app, mocker):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase(address="0", lba_size="1000")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=0, size=100)
+
+
+def test_shell_erase_resize_minus(shell_app, mocker):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase(address="30", lba_size="-20")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=11, size=20)
+
+def test_shell_erase_range(shell_app, mocker):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase_range(start_lba="31", end_lba="60")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
+
+def test_shell_erase_range_reverse(shell_app, mocker):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase_range(start_lba="60", end_lba="31")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
