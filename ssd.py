@@ -104,6 +104,21 @@ class SSD:
             f.writelines(line + '\n' for line in lines)
 
 
+    def erase(self, address: int, size: int) -> None:
+        if not isinstance(address, int) or not isinstance(size, int):
+            self._write_output(ERROR_STRING)
+            return
+
+        if not (0 <= address < SSD_SIZE) or not (1 <= size <= 10) or (address + size > SSD_SIZE):
+            self._write_output(ERROR_STRING)
+            return
+
+        lines = self._read_lines()
+        for i in range(address, address + size):
+            lines[i] = BLANK_STRING
+        self._write_lines(lines)
+
+
 class ReadCommand(Command):
     def __init__(self, ssd: SSD, address: int):
         self.ssd = ssd
@@ -124,11 +139,13 @@ class WriteCommand(Command):
 
 
 class EraseCommand(Command):
-    def __init__(self, ssd: SSD):
+    def __init__(self, ssd: SSD, address: int, size: int):
         self.ssd = ssd
+        self._address = address
+        self._size = size
 
     def execute(self):
-        self.ssd.erase()
+        self.ssd.erase(self._address, self._size)
 
 
 def main():
@@ -148,7 +165,7 @@ def main():
     elif cmd == "W":
         invoker.add_command(WriteCommand(ssd, int(arg1), arg2))
     elif cmd == "E":
-        invoker.add_command(EraseCommand(ssd))
+        invoker.add_command(EraseCommand(ssd, int(arg1), int(arg2)))
     elif cmd == "F":
         invoker.flush()
     else:
