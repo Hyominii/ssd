@@ -19,8 +19,8 @@ MAX_ERASE_SIZE = 10
 
 
 class SSDDriver:
-    def run_ssd_write(self, address: str, lba_size: str):
-        command = ['python', 'ssd.py', 'W', str(address), str(lba_size)]
+    def run_ssd_write(self, address: str, value: str):
+        command = ['python', 'ssd.py', 'W', str(address), str(value)]
         result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
 
         if result.returncode == 0:
