@@ -48,12 +48,26 @@ def test_shell_write_wrong_value(shell_app, wrong_value):
     assert ret == WRITE_ERROR
 
 
-def test_shell_write_short_number(shell_app):
+@pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
+def test_shell_write_test_valid_address(shell_app, valid_address):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
 
     # Act
-    ret = shell_app.write(address="0", value="0xAA")
+    ret = shell_app.write(address=valid_address, value="0x00000001")
+
+    # Assert
+    assert ret == WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.assert_called_once()
+    shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address=valid_address, value="0x00000001")
+
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff"])
+def test_shell_write_valid_value(shell_app, valid_value):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
+
+    # Act
+    ret = shell_app.write(address="0", value=valid_value)
 
     # Assert
     assert ret == WRITE_SUCCESS
