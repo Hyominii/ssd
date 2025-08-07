@@ -72,16 +72,16 @@ class TestShellApp:
             "erase_range": {"args": 2, "func": lambda args: self.erase_range(args[0], args[1]), "tags": ""},
             "fullwrite": {"args": 1, "func": lambda args: self.full_write(args[0]), "tags": ""},
 
-            # Runner-tagged commands
-            "1_": {"args": 0, "func": lambda: self.full_write_and_read_compare(), "tags": "runner"},
+            # scripts-tagged commands
+            "1_": {"args": 0, "func": lambda: self.full_write_and_read_compare(), "tags": "scripts"},
             "1_FullWriteAndReadCompare": {"args": 0, "func": lambda: self.full_write_and_read_compare(),
-                                          "tags": "runner"},
-            "2_": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "runner"},
-            "2_PartialLBAWrite": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "runner"},
-            "3_": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "runner"},
-            "3_WriteReadAging": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "runner"},
-            "4_": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "runner"},
-            "4_EraseAndWriteAging": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "runner"},
+                                          "tags": "scripts"},
+            "2_": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "scripts"},
+            "2_PartialLBAWrite": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "scripts"},
+            "3_": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "scripts"},
+            "3_WriteReadAging": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "scripts"},
+            "4_": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "scripts"},
+            "4_EraseAndWriteAging": {"args": 0, "func": lambda: self.erase_write_aging(), "tags": "scripts"},
         }
         self._is_runner = False
 
@@ -353,7 +353,7 @@ class TestShellApp:
             return
 
         if self._is_runner:
-            if tags != "runner":
+            if tags != "scripts":
                 self.print_invalid_command()
                 return
 
@@ -366,7 +366,7 @@ class TestShellApp:
                 if self._is_runner:
                     print(f"{cmd_name}  ___  RUN...", flush=True, end="")
                 ret = handler(cmd_args) if expected_arg_count else handler()
-                if tags == "runner":
+                if tags == "scripts":
                     if ret == SUCCESS:
                         print("Pass")
                     else:
@@ -376,7 +376,7 @@ class TestShellApp:
         except Exception:
             ret = ERROR
 
-        if tags != "runner" and ret != SUCCESS:
+        if ret != SUCCESS:
             self.print_invalid_command()
 
     def print_invalid_command(self):
