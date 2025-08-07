@@ -19,11 +19,41 @@ class SSD:
         self.init_output_file(OUTPUT_FILE)
         self.init_target_file(TARGET_FILE)
 
+    def _is_valid_value(self, value: str) -> bool:
+        if not value.startswith(('0x', '0X')) or len(value) != 10:
+            return False
+        try:
+            read_value_hex = int(value, 16)
+        except ValueError:
+            return False
+        if read_value_hex < MIN_VALUE or read_value_hex > MAX_VALUE:
+            return False
+        return True
+
+    def target_valid(self, filename: str) -> bool:
+        try:
+            with open(filename, 'r') as f:
+                lines = f.readlines()
+
+                # 모든 라인에서 개행 문자를 제거한 후 유효한 라인만 필터링합니다.
+                sanitized_lines = [line.rstrip('\n') for line in lines if line.strip()]
+
+                # 개행 문자를 제거한 라인 수가 SSD_SIZE와 일치하는지 확인합니다.
+                if len(sanitized_lines) != SSD_SIZE:
+                    return False
+
+                for line in sanitized_lines:
+                    if not self._is_valid_value(line):
+                        return False
+        except IOError:
+            return False
+        return True
+
     def init_target_file(self, filename: str):
-        # 파일이 없으면 새로 생성
-        # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
-        if os.path.exists(filename):
+        # 파일이 존재하고 유효성 검사를 통과하면 함수 종료
+        if os.path.exists(filename) and self.target_valid(filename):
             return
+
         with open(filename, "w") as f:
             [f.write(BLANK_STRING + "\n") for _ in range(100)]
         return
