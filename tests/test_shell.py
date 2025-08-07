@@ -11,18 +11,6 @@ def shell_app(mocker):
     return test_shell_app
 
 
-def test_shell_write(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-
-    # Act
-    ret = shell_app.write(address="0", value="0x00000000")
-
-    # Assert
-    assert ret == WRITE_SUCCESS
-    shell_app._ssd_driver.run_ssd_write.assert_called_once()
-
-
 def test_shell_write_subprocess(shell_app):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
@@ -32,48 +20,29 @@ def test_shell_write_subprocess(shell_app):
 
     # Assert
     assert ret == WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.assert_called_once()
     shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
 
 
-def test_shell_write_wrong_address_small_address(shell_app):
+@pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";"])
+def test_shell_write_wrong_address(shell_app, wrong_address):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
 
     # Act
-    ret = shell_app.write(address="-1", value="0x00000000")
+    ret = shell_app.write(address=wrong_address, value="0x00000000")
 
     # Assert
     assert ret == WRITE_ERROR
 
 
-def test_shell_write_wrong_address_big_address(shell_app):
+@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";"])
+def test_shell_write_wrong_value(shell_app, wrong_value):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
 
     # Act
-    ret = shell_app.write(address="100", value="0x00000000")
-
-    # Assert
-    assert ret == WRITE_ERROR
-
-
-def test_shell_write_wrong_address_float_address(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-
-    # Act
-    ret = shell_app.write(address="0.5", value="0x00000000")
-
-    # Assert
-    assert ret == WRITE_ERROR
-
-
-def test_shell_write_wrong_data_format_big_number(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-
-    # Act
-    ret = shell_app.write(address="0", value="0xAAAAAAAAAA")
+    ret = shell_app.write(address="0", value=wrong_value)
 
     # Assert
     assert ret == WRITE_ERROR
@@ -88,17 +57,6 @@ def test_shell_write_short_number(shell_app):
 
     # Assert
     assert ret == WRITE_SUCCESS
-
-
-def test_shell_write_wrong_format_data(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-
-    # Act
-    ret = shell_app.write(address="0", value="123")
-
-    # Assert
-    assert ret == WRITE_ERROR
 
 
 def test_shell_read(shell_app, capsys):
