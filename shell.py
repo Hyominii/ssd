@@ -293,7 +293,7 @@ class TestShellApp:
             if self.is_valid_command(command) == False:
                 self.print_invalid_command()
                 return
-        print("PASS")
+            self.process_cmd(command)
 
     def is_valid_command(self, command):
         parts = shlex.split(command)

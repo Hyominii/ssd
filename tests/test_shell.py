@@ -343,8 +343,11 @@ def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture
         temp_file_path = temp_file.name
 
     # Act
-    shell_app.run_runner(temp_file_path)
-
+    try:
+        shell_app.run_runner(temp_file_path)
+    finally:
+        # 테스트 후 파일 삭제
+        os.remove(temp_file_path)
     # Assert
     assert "PASS" in capsys.readouterr().out
 
@@ -357,7 +360,11 @@ def test_shell_runner_with_testfile_incorrect_cmd(shell_app, mocker: MockerFixtu
         temp_file_path = temp_file.name
 
     # Act
-    shell_app.run_runner(temp_file_path)
+    try:
+        shell_app.run_runner(temp_file_path)
+    finally:
+        # 테스트 후 파일 삭제
+        os.remove(temp_file_path)
 
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
