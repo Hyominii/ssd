@@ -13,6 +13,7 @@ ERROR_STRING = 'ERROR'
 SSD_SIZE = 100
 MIN_VALUE = 0x00000000
 MAX_VALUE = 0xFFFFFFFF
+BUFFER_DIR = 'buffer'
 
 
 class SSD:
@@ -29,6 +30,17 @@ class SSD:
             self._target_file_handler = MultilineFileWriter(SimpleFileHandler(TARGET_FILE))
             self._output_file_handler = SimpleFileHandler(OUTPUT_FILE)
             self.init_target_file()
+            self.init_command_buffer()
+
+    def init_command_buffer(self):
+        buffer_dir = BUFFER_DIR
+        os.makedirs(buffer_dir, exist_ok=True)  # 이미 있어도 에러 안 나게
+
+        # 2. 파일 생성
+        for i in range(1, 6):
+            file_path = os.path.join(buffer_dir, f"{i}_empty")
+            with open(file_path, "w") as f:
+                f.write(f"")
 
     def init_target_file(self):
         # 파일이 없으면 새로 생성
