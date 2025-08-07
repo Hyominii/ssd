@@ -1,3 +1,4 @@
+import os
 import sys
 
 from datetime import datetime
@@ -30,11 +31,32 @@ class StreamHandler(BaseHandler):
 
 
 class FileHandler(BaseHandler):
-    def __init__(self):
-        pass
+    def __init__(self, dirname="logs", filename: str = "latest.log", max_bytes=10 * 1024, compress=True):
+        self.dirname = dirname
+        self.filename = filename
+        self.max_bytes = max_bytes
+        self.compress = compress
+        self._open_file()
+
+    def _open_file(self):
+        os.makedirs(self.dirname, exist_ok=True)
+        self.file = open(f"{self.dirname}/{self.filename}", "a", encoding="utf-8")
+
+    def _rotate(self):
+        self.file.close()
+        timestamp = datetime.now().strftime("%y%m%d_%Hh_%Mm_%Ss")
+        rotated_name = f"until_{timestamp}.log"
+        os.rename(self.filename, rotated_name)
+
+        self._open_file()
 
     def emit(self, formatted_message):
-        pass
+        self.file.flush()
+        self.file.seek(0, os.SEEK_END)
+        if self.file.tell() >= self.max_bytes:
+            self._rotate()
+        self.file.write(formatted_message + "\n")
+        self.file.flush()
 
 
 class Singleton:
