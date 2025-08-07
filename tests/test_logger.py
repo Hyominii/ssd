@@ -66,12 +66,52 @@ def test_logger_debug_success(logger, capsys):
 
 
 def test_file_handler_writes_to_file(tmp_path, logger):
-    log_path = tmp_path / "test.log"
+    log_path = tmp_path / "latest.log"
 
-    handler = FileHandler(dirname=tmp_path, filename="test.log")  # 1KB 용량 제한
+    handler = FileHandler(dirname=tmp_path, filename="latest.log")  # 1KB 용량 제한
     logger.add_handler(handler)
     logger.print(CLASS_METHOD_NAME, MESSAGE)
 
     content = log_path.read_text()
     assert log_path.exists()
     assert "class.method(): Hi" in content
+
+
+def test_log_rotate(tmp_path, logger):
+    log_path = tmp_path / "latest.log"
+
+    handler = FileHandler(dirname=tmp_path, filename="latest.log", max_bytes=100)
+
+    for _ in range(10):
+        handler.emit("A" * 20)
+    rotated_logs = list(log_path.parent.glob("until*.log"))
+
+    assert len(rotated_logs) == 1
+    assert rotated_logs[0].is_file()
+
+
+def test_log_zip_after_second_rotate(tmp_path, logger):
+    log_path = tmp_path / "latest.log"
+    handler = FileHandler(dirname=tmp_path, filename="latest.log", max_bytes=100)
+
+    # First rotate
+    for _ in range(10):
+        handler.emit("A" * 20)
+
+    rotated_log = list(log_path.parent.glob("until*.log"))[0]
+    print(list(log_path.parent.glob("until*.log")))
+    assert rotated_log.exists()
+
+    import time
+    time.sleep(1)
+
+    # Second rotate
+    for _ in range(10):
+        handler.emit("B" * 10)
+
+    zip_files = list(log_path.parent.glob("until*.zip"))
+    print(list(log_path.parent.glob("until*")))
+    assert len(zip_files) > 0
+    assert zip_files[0].is_file()
+    assert not rotated_log.exists()
+
