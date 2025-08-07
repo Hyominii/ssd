@@ -144,21 +144,18 @@ def main():
     invoker = CommandInvoker()
 
     if cmd == "R":
-        #ssd.read(int(arg1))
         invoker.add_command(ReadCommand(ssd, int(arg1)))
     elif cmd == "W":
-        #if arg2 is None:
-        #    print("Missing value for write")
-        #    sys.exit(1)
-        #ssd.write(int(arg1), arg2)
         invoker.add_command(WriteCommand(ssd, int(arg1), arg2))
     elif cmd == "E":
         invoker.add_command(EraseCommand(ssd))
+    elif cmd == "F":
+        invoker.flush()
     else:
         print(f"Unknown command: {cmd}")
         sys.exit(1)
 
-    #flush
+    # flush
     invoker.flush()
 
 
