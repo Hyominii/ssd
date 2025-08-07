@@ -198,15 +198,13 @@ class TestShellApp:
         print("  exit                      : 종료")
         return SUCCESS
 
-    def run(self, max_iterations: int = None):
-        if max_iterations is not None:
-            self.run_shell(max_iterations)
-
+    def run(self):
         if len(sys.argv) > 1:
             script_file = sys.argv[1]
             self.run_runner(script_file)
         else:
-            self.run_shell(max_iterations)
+            self.run_shell()
+        return
 
     def run_shell(self, max_iterations: int = None):
         print(f"안녕하세요, SSD 검증용 Test Shell App을 시작합니다.\n")
@@ -277,4 +275,4 @@ class TestShellApp:
 
 if __name__ == "__main__":
     app = TestShellApp()
-    app.run()
+    app.run_script()

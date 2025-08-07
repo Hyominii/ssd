@@ -141,7 +141,7 @@ def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
     mock_method = mocker.patch("shell.TestShellApp.exit")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -150,7 +150,7 @@ def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["read 1"])
     mock_method = mocker.patch("shell.TestShellApp.read")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -159,7 +159,7 @@ def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
     mock_method = mocker.patch("shell.TestShellApp.write")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -168,7 +168,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["help"])
     mock_method = mocker.patch("shell.TestShellApp.help")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -177,7 +177,7 @@ def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullread"])
     mock_method = mocker.patch("shell.TestShellApp.full_read")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -186,7 +186,7 @@ def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullwrite 0x00010000"])
     mock_method = mocker.patch("shell.TestShellApp.full_write")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -195,7 +195,7 @@ def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
 def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, input, capsys):
     mocker.patch("builtins.input", side_effect=[input])
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
     captured = capsys.readouterr()
 
     assert 'INVALID COMMAND' in captured.out
@@ -204,7 +204,7 @@ def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, input, capsys):
 def test_shell_wrong_cmd_empty(shell_app, mocker: MockerFixture, capsys):
     mocker.patch("builtins.input", side_effect=[""])
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
     captured = capsys.readouterr()
 
     assert 'INVALID COMMAND' in captured.out
@@ -214,7 +214,7 @@ def test_shell_wrong_cmd_empty(shell_app, mocker: MockerFixture, capsys):
 def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, input, capsys):
     mocker.patch("builtins.input", side_effect=["read 1 2"])
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
     captured = capsys.readouterr()
 
     assert 'INVALID COMMAND' in captured.out
@@ -230,7 +230,7 @@ def test_shell_exit(shell_app, mocker: MockerFixture):
     exit_mock = mocker.patch("shell.TestShellApp.exit", side_effect=SystemExit(0))
 
     with pytest.raises(SystemExit) as e:
-        shell_app.run(1)
+        shell_app.run_shell(1)
 
     exit_mock.assert_called_once()
     assert e.value.code == 0
