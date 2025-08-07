@@ -275,4 +275,4 @@ class TestShellApp:
 
 if __name__ == "__main__":
     app = TestShellApp()
-    app.run_script()
+    app.run()
