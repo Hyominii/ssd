@@ -224,6 +224,8 @@ class TestShellApp:
             self.process_cmd(command)
 
     def run_runner(self, script_file):
+        if not os.path.exists(script_file):
+            self.print_invalid_command()
         pass
 
     def is_valid_command(self, command):
@@ -276,4 +278,3 @@ class TestShellApp:
 if __name__ == "__main__":
     app = TestShellApp()
     app.run()
-    app.help()
