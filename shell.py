@@ -317,7 +317,8 @@ class TestShellApp:
             if self.is_valid_command(command) == False:
                 self.print_invalid_command()
                 return
-            self.process_cmd(command)
+            if self.process_cmd(command) == False:
+                return
 
     def is_valid_command(self, command):
         parts = shlex.split(command)
@@ -350,6 +351,7 @@ class TestShellApp:
         if len(cmd_args) != expected_arg_count:
             self.print_invalid_command()
             return
+
         if self._is_runner:
             if tags != "runner":
                 self.print_invalid_command()
@@ -364,15 +366,17 @@ class TestShellApp:
                 if self._is_runner:
                     print(f"{cmd_name}  ___  RUN...", flush=True, end="")
                 ret = handler(cmd_args) if expected_arg_count else handler()
-                if ret == SUCCESS:
-                    print("Pass")
-                else:
-                    print("FAIL!")
+                if tags == "runner":
+                    if ret == SUCCESS:
+                        print("Pass")
+                    else:
+                        print("FAIL!")
+                        return False
 
         except Exception:
             ret = ERROR
 
-        if ret != SUCCESS:
+        if tags != "runner" and ret != SUCCESS:
             self.print_invalid_command()
 
     def print_invalid_command(self):
