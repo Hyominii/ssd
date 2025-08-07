@@ -99,7 +99,6 @@ def test_log_zip_after_second_rotate(tmp_path, logger):
         handler.emit("A" * 20)
 
     rotated_log = list(log_path.parent.glob("until*.log"))[0]
-    print(list(log_path.parent.glob("until*.log")))
     assert rotated_log.exists()
 
     import time
@@ -110,7 +109,6 @@ def test_log_zip_after_second_rotate(tmp_path, logger):
         handler.emit("B" * 10)
 
     zip_files = list(log_path.parent.glob("until*.zip"))
-    print(list(log_path.parent.glob("until*")))
     assert len(zip_files) > 0
     assert zip_files[0].is_file()
     assert not rotated_log.exists()
