@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 
+
 class FileHandler(ABC):
     @abstractmethod
     def write(self, data: str):
@@ -9,6 +10,7 @@ class FileHandler(ABC):
     @abstractmethod
     def read(self) -> str:
         pass
+
 
 class SimpleFileHandler(FileHandler):
     def __init__(self, filename: str):
@@ -26,6 +28,7 @@ class SimpleFileHandler(FileHandler):
             line = f.readline().strip()
             return line
 
+
 class FileDecorator(FileHandler):
     def __init__(self, handler: FileHandler):
         self._wrapped_handler = handler
@@ -36,14 +39,16 @@ class FileDecorator(FileHandler):
     def read(self) -> str:
         return self._wrapped_handler.read()
 
+
 class MultilineFileWriter(FileDecorator):
     def write_lines(self, lines: list):
+        lines_with_newlines = [str(line) + '\n' for line in lines]
         with open(self._wrapped_handler._filename, 'w', encoding='utf-8') as f:
-            f.writelines(line + '\n' for line in lines)
+            f.writelines(lines_with_newlines)
 
     def read_all_lines(self) -> list:
         with open(self._wrapped_handler._filename, 'r', encoding='utf-8') as f:
-            lines = [line.rstrip('\n') for line in f.readlines()]
+            lines = f.read().split("\n")
             return lines
 
     def read_specific_line(self, line_number: int) -> str:
