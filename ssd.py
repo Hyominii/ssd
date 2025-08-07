@@ -50,6 +50,33 @@ class SSD:
             f.write(read_value)
         return 0
 
+    def write(self, address: int, value: str) -> None:
+        if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
+            self._write_output(ERROR_STRING)
+            return
+
+        lines = self._read_lines()
+        lines[address] = value
+        self._write_lines(lines)
+
+    def erase(self, address: int, size: int) -> None:
+        if not isinstance(address, int) or not isinstance(size, int):
+            self._write_output(ERROR_STRING)
+            return
+
+        if not (0 <= address < SSD_SIZE) or size < 0 or (address + size > SSD_SIZE):
+            self._write_output(ERROR_STRING)
+            return
+
+        if size == 0:
+            return
+
+        lines = self._read_lines()
+        for i in range(address, address + size):
+            lines[i] = BLANK_STRING
+        self._write_lines(lines)
+
+
     def _value_validation(self, address, lines, read_value):
         if not read_value.startswith(('0x', '0X')) or len(read_value) != 10:
             self._write_error_output()
@@ -82,15 +109,6 @@ class SSD:
                 return False
         return True
 
-    def write(self, address: int, value: str) -> None:
-        if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
-            self._write_output(ERROR_STRING)
-            return
-
-        lines = self._read_lines()
-        lines[address] = value
-        self._write_lines(lines)
-
     def _write_output(self, content: str):
         with open(OUTPUT_FILE, 'w') as f:
             f.write(content)
@@ -103,20 +121,6 @@ class SSD:
         with open(TARGET_FILE, 'w') as f:
             f.writelines(line + '\n' for line in lines)
 
-
-    def erase(self, address: int, size: int) -> None:
-        if not isinstance(address, int) or not isinstance(size, int):
-            self._write_output(ERROR_STRING)
-            return
-
-        if not (0 <= address < SSD_SIZE) or not (1 <= size <= 10) or (address + size > SSD_SIZE):
-            self._write_output(ERROR_STRING)
-            return
-
-        lines = self._read_lines()
-        for i in range(address, address + size):
-            lines[i] = BLANK_STRING
-        self._write_lines(lines)
 
 
 class ReadCommand(Command):
