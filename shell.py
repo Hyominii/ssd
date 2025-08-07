@@ -68,6 +68,7 @@ class TestShellApp:
             "fullread": (0, lambda: self.full_read()),
             "write": (2, lambda args: self.write(args[0], args[1])),
             "read": (1, lambda args: self.read(args[0])),
+            "erase": (2, lambda args: self.erase(args[0], args[1])),
             "fullwrite": (1, lambda args: self.full_write(args[0])),
             "1_": (0, lambda: self.full_write_and_read_compare()),
             "1_FullWriteAndReadCompare": (0, lambda: self.full_write_and_read_compare()),
@@ -146,20 +147,24 @@ class TestShellApp:
             return ERASE_ERROR
 
         start, size = self.range_resize(address, lba_size)
-        self._erase_in_chunks(start, size)
-        return ERASE_SUCCESS
+        status = self._erase_in_chunks(start=start, size=size)
+        return status
 
     def _erase_chunk(self, start : int, size : int):
-        self._ssd_driver.run_ssd_erase(address=str(start), lba_size=str(size))
-        end = start + size - 1
-        print(f'[Erase] LBA {start:02d} ~ {end:02d}')
+        status = self._ssd_driver.run_ssd_erase(address=str(start), lba_size=str(size))
+        # end = start + size - 1
+        # print(f'[Erase] LBA {start:02d} ~ {end:02d}')
+        return status
 
     def _erase_in_chunks(self, start: int, size: int):
         """MAX_ERASE_SIZE 단위로 잘라서 _erase_chunk 호출."""
         for offset in range(0, size, MAX_ERASE_SIZE):
             chunk_size  = min(MAX_ERASE_SIZE, size - offset)
             chunk_start = start + offset
-            self._erase_chunk(chunk_start, chunk_size)
+            status = self._erase_chunk(chunk_start, chunk_size)
+            if status == ERROR:
+                return ERASE_ERROR
+        return ERASE_SUCCESS
 
     def _read_and_compare(self, address: str, written_value: str):
         read_status = self.read(address)
@@ -291,10 +296,10 @@ class TestShellApp:
             return
 
         try:
-            if cmd_name == "write":
+            if cmd_name in ["write", "erase"]:
                 ret = handler(cmd_args)
                 if ret == SUCCESS:
-                    print("[Write] Done")
+                    print(f"[{cmd_name.capitalize()}] Done")
             else:
                 ret = handler(cmd_args) if expected_arg_count else handler()
         except Exception:

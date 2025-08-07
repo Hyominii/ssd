@@ -377,13 +377,27 @@ def test_shell_erase(shell_app):
     assert ERASE_ERROR == ret_fail
 
 
-def test_shell_erase_resize(shell_app):
+def test_shell_erase_resize(shell_app, mocker):
     # Arrange
     shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
 
     # Act
     ret_pass = shell_app.erase(address="0", lba_size="1000")
 
     # Assert
     assert ERASE_SUCCESS == ret_pass
-    #shell_app._ssd_driver.run_ssd_erase.assert_called_once_with(address="0", lba_size="100")
+    shell_app._erase_in_chunks.assert_called_once_with(start=0, size=100)
+
+
+def test_shell_erase_resize_minus(shell_app, mocker):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase(address="30", lba_size="-20")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._erase_in_chunks.assert_called_once_with(start=11, size=20)
