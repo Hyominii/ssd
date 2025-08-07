@@ -105,7 +105,7 @@ class Logger(Singleton):
     def __init__(self):
         if self._initialized:
             return
-        self.handlers = []
+        self.handlers = [FileHandler()]
         self.formatter = Formatter()
         self._initialized = True
 
