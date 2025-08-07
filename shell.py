@@ -4,15 +4,18 @@ import random
 import os
 import sys
 
+ROOT_DIR = os.path.dirname(__file__)
+
 SUCCESS = 0
 ERROR = -1
 WRITE_SUCCESS = SUCCESS
 WRITE_ERROR = ERROR
 READ_SUCCESS = SUCCESS
 READ_ERROR = ERROR
+
 ERASE_SUCCESS = SUCCESS
 ERASE_ERROR = ERROR
-ROOT_DIR = os.path.dirname(__file__)
+MAX_ERASE_SIZE = 10
 
 
 class SSDDriver:
@@ -142,10 +145,21 @@ class TestShellApp:
         if not self.is_address_valid(address) or not self.is_size_valid(lba_size):
             return ERASE_ERROR
 
-        address_re, lba_size_re = self.range_resize(address, lba_size)
+        start, size = self.range_resize(address, lba_size)
+        self._erase_in_chunks(start, size)
+        return ERASE_SUCCESS
 
-        ret = self._ssd_driver.run_ssd_erase(address=address_re, lba_size=lba_size_re)
-        return ret
+    def _erase_chunk(self, start : int, size : int):
+        self._ssd_driver.run_ssd_erase(address=str(start), lba_size=str(size))
+        end = start + size - 1
+        print(f'[Erase] LBA {start:02d} ~ {end:02d}')
+
+    def _erase_in_chunks(self, start: int, size: int):
+        """MAX_ERASE_SIZE 단위로 잘라서 _erase_chunk 호출."""
+        for offset in range(0, size, MAX_ERASE_SIZE):
+            chunk_size  = min(MAX_ERASE_SIZE, size - offset)
+            chunk_start = start + offset
+            self._erase_chunk(chunk_start, chunk_size)
 
     def _read_and_compare(self, address: str, written_value: str):
         read_status = self.read(address)
@@ -295,25 +309,25 @@ class TestShellApp:
     def is_size_valid(self, lba_size):
         try:
             lba_size = int(lba_size)
-            if abs(lba_size) < 1:
+            if abs(lba_size) < 1: # size는 1이상이어야 정상동작
                 return False
             return True
         except ValueError:
             return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
 
     def range_resize(self, address: str, lba_size: str):
-        start, cnt = int(address), int(lba_size)
-        if cnt > 0:
+        start, size = int(address), int(lba_size)
+        if size > 0:
             max_blocks = 100 - start
-            block_count = min(cnt, max_blocks)
+            block_count = min(size, max_blocks)
             erase_start = start
 
-        else: # 음수 방향: 뒤로 abs(cnt) 블록
+        else:  # 음수 방향: 뒤로 abs(cnt) 블록
             max_blocks = start + 1
-            block_count = min(-cnt, max_blocks)
+            block_count = min(-size, max_blocks)
             # 음수 방향이므로 작은 주소부터 시작
             erase_start = start - (block_count - 1)
-        return (str(erase_start), str(block_count))
+        return (erase_start, block_count)
 
 
 if __name__ == "__main__":
