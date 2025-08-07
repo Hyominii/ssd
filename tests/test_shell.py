@@ -116,6 +116,18 @@ def test_shell_read(shell_app, capsys):
     shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
 
 
+def test_shell_read_with_real(capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    ret = shell_app.read(address="0")
+    captured = capsys.readouterr()
+
+    # Assert
+    assert ret == READ_SUCCESS
+
+
 def test_shell_read_after_write(shell_app, capsys):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
@@ -300,8 +312,10 @@ def test_shell_full_write(shell_app, mocker: MockerFixture):
     assert ret == WRITE_SUCCESS
     assert shell_app._ssd_driver.run_ssd_write.call_count == 100
 
+
 def test_shell_full_write_wrong_format():
     pass
+
 
 def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -316,6 +330,7 @@ def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, cap
 
     assert shell_app._ssd_driver.run_ssd_write.call_count == 100
     assert shell_app._ssd_driver.run_ssd_read.call_count == 100
+
 
 def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -332,17 +347,13 @@ def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     assert shell_app._ssd_driver.run_ssd_write.call_count == 150
     assert shell_app._ssd_driver.run_ssd_read.call_count == 150
 
-def test_shell_write_read_aging(shell_app, mocker: MockerFixture, capsys):
+
+def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 400
-    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 400
-    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+    shell_app = TestShellApp()
 
     # Act
     shell_app.write_read_aging()
 
     # Assert
     assert "PASS" in capsys.readouterr().out
-
-    assert shell_app._ssd_driver.run_ssd_write.call_count == 400
-    assert shell_app._ssd_driver.run_ssd_read.call_count == 400
