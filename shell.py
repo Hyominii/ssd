@@ -139,11 +139,8 @@ class TestShellApp:
         return WRITE_SUCCESS
 
     def erase(self, address: str, lba_size: str):
-        # lba_size 검증 추가
-        if not self.is_address_valid(address) :
+        if not self.is_address_valid(address) or not self.is_size_valid(lba_size) :
             return ERASE_ERROR
-        # if not self.is_size_valid(lba_size):
-        #     return ERASE_ERROR
 
         ret = self._ssd_driver.run_ssd_erase(address=address, lba_size=lba_size)
         return ret
@@ -294,7 +291,14 @@ class TestShellApp:
         print("INVALID COMMAND")
 
     def is_size_valid(self, lba_size):
-        pass
+        try:
+            lba_size = int(lba_size)
+            return True
+        except ValueError:
+            return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
+
+
+
 
 
 if __name__ == "__main__":

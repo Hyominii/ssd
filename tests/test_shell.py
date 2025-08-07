@@ -363,13 +363,27 @@ def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, caps
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
 
-def test_shell_erase(shell_app, mocker: MockerFixture):
+def test_shell_erase(shell_app):
     # Arrange
     shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
 
     # Act
-    ret = shell_app.erase(address="0", lba_size="1")
+    ret_pass = shell_app.erase(address="0", lba_size="1")
+    ret_fail = shell_app.erase(address="0", lba_size="0.5")
 
     # Assert
-    assert ERASE_SUCCESS == ret
-    shell_app._ssd_driver.run_ssd_erase.assert_called_once_with(address="0", lba_size="1")
+    assert ERASE_SUCCESS == ret_pass
+    assert ERASE_ERROR == ret_fail
+
+
+def test_shell_erase_resize(shell_app):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+
+    # Act
+    ret_pass = shell_app.erase(address="0", lba_size="1000")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", lba_size="100")
+
