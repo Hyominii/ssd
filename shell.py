@@ -63,23 +63,23 @@ class TestShellApp:
         self._ssd_output_cache = None
 
         self.command_specs = {
-            "exit": {"args": 0, "func": lambda: self.exit(), "tags": [""]},
-            "help": {"args": 0, "func": lambda: self.help(), "tags": [""]},
-            "fullread": {"args": 0, "func": lambda: self.full_read(), "tags": [""]},
-            "write": {"args": 2, "func": lambda args: self.write(args[0], args[1]), "tags": [""]},
-            "read": {"args": 1, "func": lambda args: self.read(args[0]), "tags": [""]},
-            "erase": {"args": 2, "func": lambda args: self.erase(args[0], args[1]), "tags": [""]},
-            "erase_range": {"args": 2, "func": lambda args: self.erase_range(args[0], args[1]), "tags": [""]},
-            "fullwrite": {"args": 1, "func": lambda args: self.full_write(args[0]), "tags": [""]},
+            "exit": {"args": 0, "func": lambda: self.exit(), "tags": ""},
+            "help": {"args": 0, "func": lambda: self.help(), "tags": ""},
+            "fullread": {"args": 0, "func": lambda: self.full_read(), "tags": ""},
+            "write": {"args": 2, "func": lambda args: self.write(args[0], args[1]), "tags": ""},
+            "read": {"args": 1, "func": lambda args: self.read(args[0]), "tags": ""},
+            "erase": {"args": 2, "func": lambda args: self.erase(args[0], args[1]), "tags": ""},
+            "erase_range": {"args": 2, "func": lambda args: self.erase_range(args[0], args[1]), "tags": ""},
+            "fullwrite": {"args": 1, "func": lambda args: self.full_write(args[0]), "tags": ""},
 
             # Runner-tagged commands
-            "1_": {"args": 0, "func": lambda: self.full_write_and_read_compare(), "tags": ["runner"]},
+            "1_": {"args": 0, "func": lambda: self.full_write_and_read_compare(), "tags": "runner"},
             "1_FullWriteAndReadCompare": {"args": 0, "func": lambda: self.full_write_and_read_compare(),
-                                          "tags": ["runner"]},
-            "2_": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": ["runner"]},
-            "2_PartialLBAWrite": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": ["runner"]},
-            "3_": {"args": 0, "func": lambda: self.write_read_aging(), "tags": ["runner"]},
-            "3_WriteReadAging": {"args": 0, "func": lambda: self.write_read_aging(), "tags": ["runner"]},
+                                          "tags": "runner"},
+            "2_": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "runner"},
+            "2_PartialLBAWrite": {"args": 0, "func": lambda: self.partial_lba_write(), "tags": "runner"},
+            "3_": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "runner"},
+            "3_WriteReadAging": {"args": 0, "func": lambda: self.write_read_aging(), "tags": "runner"},
         }
         self._is_runner = False
 
@@ -327,7 +327,7 @@ class TestShellApp:
             self.print_invalid_command()
             return
         if self._is_runner:
-            if tags[0] != "runner":
+            if tags != "runner":
                 self.print_invalid_command()
                 return
 
