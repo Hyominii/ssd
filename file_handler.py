@@ -28,6 +28,9 @@ class SimpleFileHandler(FileHandler):
             line = f.readline().strip()
             return line
 
+    def get_file_name(self):
+        return self._filename
+
 
 class FileDecorator(FileHandler):
     def __init__(self, handler: FileHandler):
@@ -39,16 +42,19 @@ class FileDecorator(FileHandler):
     def read(self) -> str:
         return self._wrapped_handler.read()
 
+    def _get_file_name(self) -> str:
+        return self._wrapped_handler._filename
+
 
 class MultilineFileWriter(FileDecorator):
     def write_lines(self, lines: list):
         lines_with_newlines = [str(line) + '\n' for line in lines]
-        with open(self._wrapped_handler._filename, 'w', encoding='utf-8') as f:
+        with open(self._get_file_name(), 'w', encoding='utf-8') as f:
             f.writelines(lines_with_newlines)
 
     def read_all_lines(self) -> list:
-        with open(self._wrapped_handler._filename, 'r', encoding='utf-8') as f:
-            lines = f.read().split("\n")
+        with open(self._get_file_name(), 'r', encoding='utf-8') as f:
+            lines = [line.strip() for line in f][0:100]
             return lines
 
     def read_specific_line(self, line_number: int) -> str:

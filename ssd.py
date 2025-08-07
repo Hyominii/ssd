@@ -84,7 +84,7 @@ class SSD:
         if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
             self._output_file_handler.write(ERROR_STRING)
             return False
-        if (address < 0 or address >= 100):
+        if (address < 0 or address >= SSD_SIZE):
             self._output_file_handler.write(ERROR_STRING)
             return False
         return True
