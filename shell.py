@@ -143,7 +143,7 @@ class TestShellApp:
             for address in range(block, block + 5):
                 if self._read_and_compare(str(address), write_value) == False:
                     print("FAIL")
-                    raise SystemExit(1)
+                    return ERROR
         print("PASS")
         return SUCCESS
 
@@ -157,7 +157,7 @@ class TestShellApp:
             for address in range(0, 5):
                 if self._read_and_compare(str(address), "0x12345678") == False:
                     print("FAIL")
-                    raise SystemExit(1)
+                    return ERROR
         print("PASS")
         return SUCCESS
 
@@ -170,10 +170,10 @@ class TestShellApp:
 
             if self._read_and_compare("0", write_value) == False:
                 print("FAIL")
-                raise SystemExit(1)
+                return ERROR
             if self._read_and_compare("99", write_value) == False:
                 print("FAIL")
-                raise SystemExit(1)
+                return ERROR
         print("PASS")
         return SUCCESS
 
