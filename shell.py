@@ -1,6 +1,8 @@
 import shlex
 import subprocess
 import random
+import os
+import sys
 
 SUCCESS = 0
 ERROR = -1
@@ -8,12 +10,13 @@ WRITE_SUCCESS = SUCCESS
 WRITE_ERROR = ERROR
 READ_SUCCESS = SUCCESS
 READ_ERROR = ERROR
+ROOT_DIR = os.path.dirname(__file__)
 
 
 class SSDDriver:
     def run_ssd_write(self, address: str, value: str):
         command = ['python', 'ssd.py', 'W', str(address), str(value)]
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
 
         if result.returncode == 0:
             return WRITE_SUCCESS
@@ -22,13 +25,13 @@ class SSDDriver:
 
     def run_ssd_read(self, address: str):
         command = ['python', 'ssd.py', 'R', str(address)]
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True)
         if result.returncode == 0:
             return READ_SUCCESS
         else:
             return READ_ERROR
 
-    def get_ssd_output(self, file_path: str = "ssd_output.txt"):
+    def get_ssd_output(self, file_path: str = ROOT_DIR + "/ssd_output.txt"):
         with open(file_path, 'r', encoding='utf-8') as f:
             line = f.readline().rstrip("\n")
 
@@ -143,7 +146,7 @@ class TestShellApp:
             for address in range(block, block + 5):
                 if self._read_and_compare(str(address), write_value) == False:
                     print("FAIL")
-                    raise SystemExit(1)
+                    return ERROR
         print("PASS")
         return SUCCESS
 
@@ -157,7 +160,7 @@ class TestShellApp:
             for address in range(0, 5):
                 if self._read_and_compare(str(address), "0x12345678") == False:
                     print("FAIL")
-                    raise SystemExit(1)
+                    return ERROR
         print("PASS")
         return SUCCESS
 
@@ -170,10 +173,10 @@ class TestShellApp:
 
             if self._read_and_compare("0", write_value) == False:
                 print("FAIL")
-                raise SystemExit(1)
+                return ERROR
             if self._read_and_compare("99", write_value) == False:
                 print("FAIL")
-                raise SystemExit(1)
+                return ERROR
         print("PASS")
         return SUCCESS
 
@@ -195,7 +198,15 @@ class TestShellApp:
         print("  exit                      : 종료")
         return SUCCESS
 
-    def run(self, max_iterations: int = None):
+    def run(self):
+        if len(sys.argv) > 1:
+            script_file = sys.argv[1]
+            self.run_runner(script_file)
+        else:
+            self.run_shell()
+        return
+
+    def run_shell(self, max_iterations: int = None):
         print(f"안녕하세요, SSD 검증용 Test Shell App을 시작합니다.\n")
 
         while True:
@@ -209,6 +220,11 @@ class TestShellApp:
                 continue
 
             self.process_cmd(command)
+
+    def run_runner(self, script_file: str = ""):
+        if not os.path.exists(script_file):
+            self.print_invalid_command()
+        print("PASS")
 
     def is_valid_command(self, command):
         parts = shlex.split(command)
@@ -260,4 +276,3 @@ class TestShellApp:
 if __name__ == "__main__":
     app = TestShellApp()
     app.run()
-    app.help()

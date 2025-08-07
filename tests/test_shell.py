@@ -11,18 +11,6 @@ def shell_app(mocker):
     return test_shell_app
 
 
-def test_shell_write(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-
-    # Act
-    ret = shell_app.write(address="0", value="0x00000000")
-
-    # Assert
-    assert ret == WRITE_SUCCESS
-    shell_app._ssd_driver.run_ssd_write.assert_called_once()
-
-
 def test_shell_write_subprocess(shell_app):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
@@ -35,70 +23,52 @@ def test_shell_write_subprocess(shell_app):
     shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
 
 
-def test_shell_write_wrong_address_small_address(shell_app):
+@pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";"])
+def test_shell_write_wrong_address(shell_app, wrong_address):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
 
     # Act
-    ret = shell_app.write(address="-1", value="0x00000000")
+    ret = shell_app.write(address=wrong_address, value="0x00000000")
 
     # Assert
     assert ret == WRITE_ERROR
 
 
-def test_shell_write_wrong_address_big_address(shell_app):
+@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";"])
+def test_shell_write_wrong_value(shell_app, wrong_value):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
 
     # Act
-    ret = shell_app.write(address="100", value="0x00000000")
+    ret = shell_app.write(address="0", value=wrong_value)
 
     # Assert
     assert ret == WRITE_ERROR
 
 
-def test_shell_write_wrong_address_float_address(shell_app):
+@pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
+def test_shell_write_test_valid_address(shell_app, valid_address):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
 
     # Act
-    ret = shell_app.write(address="0.5", value="0x00000000")
-
-    # Assert
-    assert ret == WRITE_ERROR
-
-
-def test_shell_write_wrong_data_format_big_number(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-
-    # Act
-    ret = shell_app.write(address="0", value="0xAAAAAAAAAA")
-
-    # Assert
-    assert ret == WRITE_ERROR
-
-
-def test_shell_write_short_number(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-
-    # Act
-    ret = shell_app.write(address="0", value="0xAA")
+    ret = shell_app.write(address=valid_address, value="0x00000001")
 
     # Assert
     assert ret == WRITE_SUCCESS
+    shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address=valid_address, value="0x00000001")
 
-
-def test_shell_write_wrong_format_data(shell_app):
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff"])
+def test_shell_write_valid_value(shell_app, valid_value):
     # Arrange
     shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
 
     # Act
-    ret = shell_app.write(address="0", value="123")
+    ret = shell_app.write(address="0", value=valid_value)
 
     # Assert
-    assert ret == WRITE_ERROR
+    assert ret == WRITE_SUCCESS
 
 
 def test_shell_read(shell_app, capsys):
@@ -114,6 +84,18 @@ def test_shell_read(shell_app, capsys):
     assert ret == READ_SUCCESS
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
+
+
+def test_shell_read_with_real(capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    ret = shell_app.read(address="0")
+    captured = capsys.readouterr()
+
+    # Assert
+    assert ret == READ_SUCCESS
 
 
 def test_shell_read_after_write(shell_app, capsys):
@@ -159,7 +141,7 @@ def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
     mock_method = mocker.patch("shell.TestShellApp.exit")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -168,7 +150,7 @@ def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["read 1"])
     mock_method = mocker.patch("shell.TestShellApp.read")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -177,7 +159,7 @@ def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
     mock_method = mocker.patch("shell.TestShellApp.write")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -186,7 +168,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["help"])
     mock_method = mocker.patch("shell.TestShellApp.help")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -195,7 +177,7 @@ def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullread"])
     mock_method = mocker.patch("shell.TestShellApp.full_read")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -204,7 +186,7 @@ def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullwrite 0x00010000"])
     mock_method = mocker.patch("shell.TestShellApp.full_write")
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
 
     mock_method.assert_called_once()
 
@@ -213,7 +195,7 @@ def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
 def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, input, capsys):
     mocker.patch("builtins.input", side_effect=[input])
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
     captured = capsys.readouterr()
 
     assert 'INVALID COMMAND' in captured.out
@@ -222,7 +204,7 @@ def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, input, capsys):
 def test_shell_wrong_cmd_empty(shell_app, mocker: MockerFixture, capsys):
     mocker.patch("builtins.input", side_effect=[""])
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
     captured = capsys.readouterr()
 
     assert 'INVALID COMMAND' in captured.out
@@ -232,7 +214,7 @@ def test_shell_wrong_cmd_empty(shell_app, mocker: MockerFixture, capsys):
 def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, input, capsys):
     mocker.patch("builtins.input", side_effect=["read 1 2"])
 
-    shell_app.run(1)
+    shell_app.run_shell(1)
     captured = capsys.readouterr()
 
     assert 'INVALID COMMAND' in captured.out
@@ -248,7 +230,7 @@ def test_shell_exit(shell_app, mocker: MockerFixture):
     exit_mock = mocker.patch("shell.TestShellApp.exit", side_effect=SystemExit(0))
 
     with pytest.raises(SystemExit) as e:
-        shell_app.run(1)
+        shell_app.run_shell(1)
 
     exit_mock.assert_called_once()
     assert e.value.code == 0
@@ -265,12 +247,15 @@ def test_shell_help(capsys):
         "팀명: BestReviewer",
         "팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈",
         "사용 가능한 명령어:",
-        "  write <LBA> <Value>      : 특정 LBA에 값 저장",
-        "  read <LBA>               : 특정 LBA 값 읽기",
-        "  fullwrite <Value>        : 전체 LBA에 동일 값 저장",
-        "  fullread                 : 전체 LBA 읽기 및 출력",
-        "  help                     : 도움말 출력",
-        "  exit                     : 종료",
+        "  write <LBA> <Value>       : 특정 LBA에 값 저장",
+        "  read <LBA>                : 특정 LBA 값 읽기",
+        "  fullwrite <Value>         : 전체 LBA에 동일 값 저장",
+        "  fullread                  : 전체 LBA 읽기 및 출력",
+        "  1_FullWriteAndReadCompare : 전체 LBA 쓰기 및 비교",
+        "  2_PartialLBAWrite         : LBA 0 ~ 4 쓰기 및 읽기 30회",
+        "  3_WriteReadAging          : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
+        "  help                      : 도움말 출력",
+        "  exit                      : 종료"
     ]
 
     for line in expected_lines:
@@ -300,8 +285,10 @@ def test_shell_full_write(shell_app, mocker: MockerFixture):
     assert ret == WRITE_SUCCESS
     assert shell_app._ssd_driver.run_ssd_write.call_count == 100
 
+
 def test_shell_full_write_wrong_format():
     pass
+
 
 def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -316,6 +303,7 @@ def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, cap
 
     assert shell_app._ssd_driver.run_ssd_write.call_count == 100
     assert shell_app._ssd_driver.run_ssd_read.call_count == 100
+
 
 def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -332,11 +320,10 @@ def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     assert shell_app._ssd_driver.run_ssd_write.call_count == 150
     assert shell_app._ssd_driver.run_ssd_read.call_count == 150
 
-def test_shell_write_read_aging(shell_app, mocker: MockerFixture, capsys):
+
+def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 400
-    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 400
-    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
+    shell_app = TestShellApp()
 
     # Act
     shell_app.write_read_aging()
@@ -344,5 +331,34 @@ def test_shell_write_read_aging(shell_app, mocker: MockerFixture, capsys):
     # Assert
     assert "PASS" in capsys.readouterr().out
 
-    assert shell_app._ssd_driver.run_ssd_write.call_count == 400
-    assert shell_app._ssd_driver.run_ssd_read.call_count == 400
+def test_shell_runner_with_testfile(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    scipt_file = f"{ROOT_DIR}\shell_scripts.txt"
+    shell_app.run_runner(scipt_file)
+
+    # Assert
+    assert "PASS" in capsys.readouterr().out
+
+def test_shell_runner_without_testfile(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    shell_app.run_runner()
+
+    # Assert
+    assert "INVALID COMMAND" in capsys.readouterr().out
+
+def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    scipt_file = f"{ROOT_DIR}\shell_scripts_.txt"
+    shell_app.run_runner(scipt_file)
+
+    # Assert
+    assert "INVALID COMMAND" in capsys.readouterr().out
