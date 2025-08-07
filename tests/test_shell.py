@@ -1,3 +1,5 @@
+import tempfile
+
 import pytest
 from pytest_mock import MockerFixture
 from shell import *
@@ -332,16 +334,33 @@ def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, caps
     # Assert
     assert "PASS" in capsys.readouterr().out
 
-def test_shell_runner_with_testfile(shell_app, mocker: MockerFixture, capsys):
+def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     shell_app = TestShellApp()
+    # 임시 파일 생성
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
+        temp_file.write("1_\n")
+        temp_file_path = temp_file.name
 
     # Act
-    scipt_file = f"{ROOT_DIR}\shell_scripts.txt"
-    shell_app.run_runner(scipt_file)
+    shell_app.run_runner(temp_file_path)
 
     # Assert
     assert "PASS" in capsys.readouterr().out
+
+def test_shell_runner_with_testfile_incorrect_cmd(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+    # 임시 파일 생성
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
+        temp_file.write("Hello\n")
+        temp_file_path = temp_file.name
+
+    # Act
+    shell_app.run_runner(temp_file_path)
+
+    # Assert
+    assert "INVALID COMMAND" in capsys.readouterr().out
 
 def test_shell_runner_without_testfile(shell_app, mocker: MockerFixture, capsys):
     # Arrange
