@@ -6,13 +6,24 @@ from datetime import datetime
 from typing import Optional
 from utils import find_files_by_pattern
 
+DEFAULT_LOG_DIR = "logs"
+DEFAULT_LOG_FILE_NAME = "latest.log"
+DEFAULT_MAX_BYTES = 10 * 1024
+DEFAULT_LOG_TIMESTAMP_FORMAT = "%y.%m.%d %H:%M"
+DEFAULT_LOG_FORMAT = "[{time}]{level} {class_method_name}: {message}"
+DEFAULT_ROTATE_LOG_TIMESTAMP_FORMAT = "%y%m%d_%Hh_%Mm_%Ss"
+
+INFO = "INFO"
+WARN = "WARN"
+ERROR = "ERROR"
+DEBUG = "DEBUG"
 
 class Formatter:
     def __init__(self, fmt=None):
-        self.fmt = fmt or "[{time}]{level} {class_method_name}: {message}"
+        self.fmt = fmt or DEFAULT_LOG_FORMAT
 
     def format(self, class_method_name, message, level: Optional[str] = None):
-        now = datetime.now().strftime("%y.%m.%d %H:%M")
+        now = datetime.now().strftime(DEFAULT_LOG_TIMESTAMP_FORMAT)
         if not level:
             level = ""
         return self.fmt.format(time=now, class_method_name=class_method_name, message=message, level=level)
@@ -33,7 +44,7 @@ class StreamHandler(BaseHandler):
 
 
 class FileHandler(BaseHandler):
-    def __init__(self, dirname="logs", filename: str = "latest.log", max_bytes=10 * 1024, compress=True):
+    def __init__(self, dirname=DEFAULT_LOG_DIR, filename: str = DEFAULT_LOG_FILE_NAME, max_bytes=DEFAULT_MAX_BYTES, compress=True):
         self.dirname = dirname
         self.filename = filename
         self.log_path = f"{dirname}/{filename}"
@@ -50,7 +61,7 @@ class FileHandler(BaseHandler):
 
         self._compress_existing_rotate_log()
 
-        timestamp = datetime.now().strftime("%y%m%d_%Hh_%Mm_%Ss")
+        timestamp = datetime.now().strftime(DEFAULT_ROTATE_LOG_TIMESTAMP_FORMAT)
         rotate_file_path = f"{self.dirname}/until_{timestamp}.log"
         os.rename(self.log_path, rotate_file_path)
 
@@ -94,7 +105,7 @@ class Logger(Singleton):
     def __init__(self):
         if self._initialized:
             return
-        self.handlers = [StreamHandler()]
+        self.handlers = []
         self.formatter = Formatter()
         self._initialized = True
 
@@ -110,16 +121,16 @@ class Logger(Singleton):
             handler.emit(formatted)
 
     def info(self, class_method_name: str, message: str):
-        self._log(class_method_name, message, "INFO")
+        self._log(class_method_name, message, INFO)
 
     def warn(self, class_method_name: str, message: str):
-        self._log(class_method_name, message, "WARN")
+        self._log(class_method_name, message, WARN)
 
     def error(self, class_method_name: str, message: str):
-        self._log(class_method_name, message, "ERROR")
+        self._log(class_method_name, message, ERROR)
 
     def debug(self, class_method_name: str, message: str):
-        self._log(class_method_name, message, "DEBUG")
+        self._log(class_method_name, message, DEBUG)
 
     def print(self, class_method_name: str, message: str):
         self._log(class_method_name=class_method_name, message=message)
