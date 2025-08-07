@@ -326,9 +326,10 @@ class TestShellApp:
         if len(cmd_args) != expected_arg_count:
             self.print_invalid_command()
             return
-        if tag_name != tags[0]:
-            self.print_invalid_command()
-            return
+        if self._is_runner:
+            if tags[0] != "runner":
+                self.print_invalid_command()
+                return
 
         try:
             if cmd_name in ["write", "erase", "erase_range"]:
