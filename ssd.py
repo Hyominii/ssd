@@ -13,25 +13,25 @@ MAX_VALUE = 0xFFFFFFFF
 
 
 class SSD:
-    def __init__(self):
-        self.init_output_file(OUTPUT_FILE)
-        self.init_target_file(TARGET_FILE)
+    _instance = None
 
-    def init_target_file(self, filename: str):
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def __init__(self):
+        if not hasattr(self, 'initialized'):
+            self.initialized = True
+            self._write_output("")
+            self.init_target_file()
+
+    def init_target_file(self):
         # 파일이 없으면 새로 생성
         # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
-        if os.path.exists(filename):
+        if os.path.exists(TARGET_FILE):
             return
-        with open(filename, "w") as f:
-            [f.write(BLANK_STRING + "\n") for _ in range(100)]
-        return
-
-    def init_output_file(self, filename: str):
-        # 파일이 없으면 새로 생성
-        if os.path.exists(filename):
-            os.remove(filename)
-        with open(filename, "w") as f:
-            f.write("")
+        self._write_lines([(BLANK_STRING + "\n") for _ in range(100)])
         return
 
     def read(self, address: int) -> int:
@@ -44,40 +44,33 @@ class SSD:
         read_value = lines[address].rstrip("\n")
         if not self._value_validation(address, lines, read_value):
             return 1
-        with open(OUTPUT_FILE, "w") as f:
-            f.write(read_value)
+        self._write_output(read_value)
         return 0
 
     def _value_validation(self, address, lines, read_value):
         if not read_value.startswith(('0x', '0X')) or len(read_value) != 10:
-            self._write_error_output()
+            self._write_output(ERROR_STRING)
             return False
         try:
             read_value_hex = int(read_value, 16)
         except ValueError:
-            self._write_error_output()
+            self._write_output(ERROR_STRING)
             return False
         if read_value_hex < MIN_VALUE or read_value_hex > MAX_VALUE:
-            self._write_error_output()
+            self._write_output(ERROR_STRING)
             return False
         if len(lines) < address:
-            self._write_error_output()
+            self._write_output(ERROR_STRING)
             return False
         return True
 
-    def _write_error_output(self):
-        with open(OUTPUT_FILE, "w") as f:
-            f.write(ERROR_STRING)
-
     def _check_lda_validation(self, address) -> bool:
         if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
-            with open(OUTPUT_FILE, "w") as f:
-                f.write(ERROR_STRING)
-                return False
+            self._write_output(ERROR_STRING)
+            return False
         if (address < 0 or address >= 100):
-            with open(OUTPUT_FILE, "w") as f:
-                f.write(ERROR_STRING)
-                return False
+            self._write_output(ERROR_STRING)
+            return False
         return True
 
     def write(self, address: int, value: str) -> None:
