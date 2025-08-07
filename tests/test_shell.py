@@ -59,6 +59,7 @@ def test_shell_write_test_valid_address(shell_app, valid_address):
     assert ret == WRITE_SUCCESS
     shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address=valid_address, value="0x00000001")
 
+
 @pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff"])
 def test_shell_write_valid_value(shell_app, valid_value):
     # Arrange
@@ -385,5 +386,4 @@ def test_shell_erase_resize(shell_app):
 
     # Assert
     assert ERASE_SUCCESS == ret_pass
-    shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", lba_size="100")
-
+    shell_app._ssd_driver.run_ssd_erase.assert_called_once_with(address="0", lba_size="100")

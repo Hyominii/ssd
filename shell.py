@@ -139,10 +139,12 @@ class TestShellApp:
         return WRITE_SUCCESS
 
     def erase(self, address: str, lba_size: str):
-        if not self.is_address_valid(address) or not self.is_size_valid(lba_size) :
+        if not self.is_address_valid(address) or not self.is_size_valid(lba_size):
             return ERASE_ERROR
 
-        ret = self._ssd_driver.run_ssd_erase(address=address, lba_size=lba_size)
+        address_re, lba_size_re = self.range_resize(address, lba_size)
+
+        ret = self._ssd_driver.run_ssd_erase(address=address_re, lba_size=lba_size_re)
         return ret
 
     def _read_and_compare(self, address: str, written_value: str):
@@ -293,12 +295,25 @@ class TestShellApp:
     def is_size_valid(self, lba_size):
         try:
             lba_size = int(lba_size)
+            if abs(lba_size) < 1:
+                return False
             return True
         except ValueError:
             return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
 
+    def range_resize(self, address: str, lba_size: str):
+        start, cnt = int(address), int(lba_size)
+        if cnt > 0:
+            max_blocks = 100 - start
+            block_count = min(cnt, max_blocks)
+            erase_start = start
 
-
+        else: # 음수 방향: 뒤로 abs(cnt) 블록
+            max_blocks = start + 1
+            block_count = min(-cnt, max_blocks)
+            # 음수 방향이므로 작은 주소부터 시작
+            erase_start = start - (block_count - 1)
+        return (str(erase_start), str(block_count))
 
 
 if __name__ == "__main__":
