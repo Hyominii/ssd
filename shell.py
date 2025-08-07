@@ -146,21 +146,37 @@ class TestShellApp:
         if not self.is_address_valid(address) or not self.is_size_valid(lba_size):
             return ERASE_ERROR
 
-        start, size = self.range_resize(address, lba_size)
-        status = self._erase_in_chunks(start=start, size=size)
+        start_lba, size = self.range_resize(address, lba_size)
+        status = self._erase_in_chunks(start_lba=start_lba, size=size)
         return status
 
-    def _erase_chunk(self, start : int, size : int):
-        status = self._ssd_driver.run_ssd_erase(address=str(start), lba_size=str(size))
+    def erase_range(self, start_lba: str, end_lba: str):
+        if not self.is_address_valid(start_lba) or not self.is_address_valid(end_lba):
+            return ERASE_ERROR
+
+        low, high = sorted((int(start_lba), int(end_lba)))
+
+        low = max(0, low)
+        high = min(99, high)
+
+        # Erase size 계산
+        size = high - low + 1
+        if size <= 0: return ERASE_ERROR
+
+        status = self._erase_in_chunks(start_lba=low, size=size)
+        return status
+
+    def _erase_chunk(self, start_lba: int, size: int):
+        status = self._ssd_driver.run_ssd_erase(address=str(start_lba), lba_size=str(size))
         # end = start + size - 1
         # print(f'[Erase] LBA {start:02d} ~ {end:02d}')
         return status
 
-    def _erase_in_chunks(self, start: int, size: int):
+    def _erase_in_chunks(self, start_lba: int, size: int):
         """MAX_ERASE_SIZE 단위로 잘라서 _erase_chunk 호출."""
         for offset in range(0, size, MAX_ERASE_SIZE):
-            chunk_size  = min(MAX_ERASE_SIZE, size - offset)
-            chunk_start = start + offset
+            chunk_size = min(MAX_ERASE_SIZE, size - offset)
+            chunk_start = start_lba + offset
             status = self._erase_chunk(chunk_start, chunk_size)
             if status == ERROR:
                 return ERASE_ERROR
@@ -314,7 +330,7 @@ class TestShellApp:
     def is_size_valid(self, lba_size):
         try:
             lba_size = int(lba_size)
-            if abs(lba_size) < 1: # size는 1이상이어야 정상동작
+            if abs(lba_size) < 1:  # size는 1이상이어야 정상동작
                 return False
             return True
         except ValueError:

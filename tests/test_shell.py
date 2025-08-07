@@ -387,7 +387,7 @@ def test_shell_erase_resize(shell_app, mocker):
 
     # Assert
     assert ERASE_SUCCESS == ret_pass
-    shell_app._erase_in_chunks.assert_called_once_with(start=0, size=100)
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=0, size=100)
 
 
 def test_shell_erase_resize_minus(shell_app, mocker):
@@ -400,4 +400,28 @@ def test_shell_erase_resize_minus(shell_app, mocker):
 
     # Assert
     assert ERASE_SUCCESS == ret_pass
-    shell_app._erase_in_chunks.assert_called_once_with(start=11, size=20)
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=11, size=20)
+
+def test_shell_erase_range(shell_app, mocker):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase_range(start_lba="31", end_lba="60")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
+
+def test_shell_erase_range_reverse(shell_app, mocker):
+    # Arrange
+    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
+    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
+
+    # Act
+    ret_pass = shell_app.erase_range(start_lba="60", end_lba="31")
+
+    # Assert
+    assert ERASE_SUCCESS == ret_pass
+    shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
