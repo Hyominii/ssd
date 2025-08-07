@@ -299,10 +299,10 @@ def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, cap
     shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 100
     shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
     # Act
-    shell_app.full_write_and_read_compare()
+    shell_app.process_cmd("1_FullWriteAndReadCompare", "runner")
 
     # Assert
-    assert "PASS" in capsys.readouterr().out
+    assert "Pass" in capsys.readouterr().out
 
     assert shell_app._ssd_driver.run_ssd_write.call_count == 100
     assert shell_app._ssd_driver.run_ssd_read.call_count == 100
@@ -315,10 +315,10 @@ def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
 
     # Act
-    shell_app.partial_lba_write()
+    shell_app.process_cmd("2_PartialLBAWrite", "runner")
 
     # Assert
-    assert "PASS" in capsys.readouterr().out
+    assert "Pass" in capsys.readouterr().out
 
     assert shell_app._ssd_driver.run_ssd_write.call_count == 150
     assert shell_app._ssd_driver.run_ssd_read.call_count == 150
@@ -329,10 +329,10 @@ def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, caps
     shell_app = TestShellApp()
 
     # Act
-    shell_app.write_read_aging()
+    shell_app.process_cmd("3_WriteReadAging", "runner")
 
     # Assert
-    assert "PASS" in capsys.readouterr().out
+    assert "Pass" in capsys.readouterr().out
 
 def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -349,7 +349,7 @@ def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture
         # 테스트 후 파일 삭제
         os.remove(temp_file_path)
     # Assert
-    assert "PASS" in capsys.readouterr().out
+    assert "1_  ___  RUN...Pass" in capsys.readouterr().out
 
 def test_shell_runner_with_testfile_incorrect_cmd(shell_app, mocker: MockerFixture, capsys):
     # Arrange

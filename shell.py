@@ -81,6 +81,7 @@ class TestShellApp:
             "3_": {"args": 0, "func": lambda: self.write_read_aging(), "tags": ["runner"]},
             "3_WriteReadAging": {"args": 0, "func": lambda: self.write_read_aging(), "tags": ["runner"]},
         }
+        self._is_runner = False
 
     def is_address_valid(self, address: str):
         try:
@@ -119,7 +120,8 @@ class TestShellApp:
             return status
         self._ssd_output_cache = self._ssd_driver.get_ssd_output()
         read_result = f'[Read] LBA {address.zfill(2)} : {self._ssd_output_cache}'
-        print(read_result)
+        if not self._is_runner:
+            print(read_result)
         return status
 
     def full_read(self):
@@ -204,9 +206,7 @@ class TestShellApp:
                 self.write(str(address), write_value)
             for address in range(block, block + 5):
                 if self._read_and_compare(str(address), write_value) == False:
-                    print("FAIL")
                     return ERROR
-        print("PASS")
         return SUCCESS
 
     def partial_lba_write(self):
@@ -218,9 +218,7 @@ class TestShellApp:
             self.write("2", "0x12345678")
             for address in range(0, 5):
                 if self._read_and_compare(str(address), "0x12345678") == False:
-                    print("FAIL")
                     return ERROR
-        print("PASS")
         return SUCCESS
 
     def write_read_aging(self):
@@ -231,12 +229,9 @@ class TestShellApp:
             self.write("99", write_value)
 
             if self._read_and_compare("0", write_value) == False:
-                print("FAIL")
                 return ERROR
             if self._read_and_compare("99", write_value) == False:
-                print("FAIL")
                 return ERROR
-        print("PASS")
         return SUCCESS
 
     def exit(self):
@@ -266,6 +261,7 @@ class TestShellApp:
         return
 
     def run_shell(self, max_iterations: int = None):
+        self._is_runner = False
         print(f"안녕하세요, SSD 검증용 Test Shell App을 시작합니다.\n")
 
         while True:
@@ -281,6 +277,7 @@ class TestShellApp:
             self.process_cmd(command)
 
     def run_runner(self, script_file: str = ""):
+        self._is_runner = True
         if not os.path.exists(script_file):
             self.print_invalid_command()
             return
@@ -339,7 +336,14 @@ class TestShellApp:
                 if ret == SUCCESS:
                     print(f"[{cmd_name.capitalize()}] Done")
             else:
+                if self._is_runner:
+                    print(f"{cmd_name}  ___  RUN...", flush=True, end="")
                 ret = handler(cmd_args) if expected_arg_count else handler()
+                if ret == SUCCESS:
+                    print("Pass")
+                else:
+                    print("FAIL!")
+
         except Exception:
             ret = ERROR
 
