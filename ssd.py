@@ -60,7 +60,7 @@ class SSD:
         self._write_lines(lines)
 
     def erase(self, address: int, size: int) -> None:
-        if not isinstance(address, int) or not isinstance(size, int):
+        if not isinstance(address, int) or not isinstance(size, int) or size > 10:
             self._write_output(ERROR_STRING)
             return
 
