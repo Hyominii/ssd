@@ -2,7 +2,7 @@ import os
 import sys
 
 from abc import ABC, abstractmethod
-from file_handler import SimpleFileHandler, MultilineFileWriter
+from file_handler_ import SimpleFileHandler, MultilineFileWriter
 from command import CommandInvoker, Command
 
 OUTPUT_FILE = 'ssd_output.txt'
@@ -13,6 +13,7 @@ SSD_SIZE = 100
 MIN_VALUE = 0x00000000
 MAX_VALUE = 0xFFFFFFFF
 BUFFER_DIR = 'buffer'
+
 
 class SSD:
     _instance = None
@@ -52,7 +53,7 @@ class SSD:
         # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
         if os.path.exists(TARGET_FILE):
             return
-        self._target_file_handler.write_lines([BLANK_STRING for _ in range(SSD_SIZE)])
+        self._target_file_handler.write_lines([BLANK_STRING for _ in range(100)])
         return
 
     def read(self, address: int) -> int:
@@ -83,7 +84,7 @@ class SSD:
         if not isinstance(address, int) or not (0 <= address < SSD_SIZE):
             self._output_file_handler.write(ERROR_STRING)
             return False
-        if (address < 0 or address >= SSD_SIZE):
+        if (address < 0 or address >= 100):
             self._output_file_handler.write(ERROR_STRING)
             return False
         return True
@@ -93,24 +94,7 @@ class SSD:
             self._output_file_handler.write(ERROR_STRING)
             return
         lines = self._target_file_handler.read_all_lines()
-        lines[address] = value  # 실제 업데이트 추가
-        self._target_file_handler.write_lines(lines)
-
-    def erase(self, address: int, size: int) -> None:  # erase 메서드 추가 (old 기반)
-        if not isinstance(address, int) or not isinstance(size, int) or size > 10:
-            self._output_file_handler.write(ERROR_STRING)
-            return
-
-        if not (0 <= address < SSD_SIZE) or size < 0 or (address + size > SSD_SIZE):
-            self._output_file_handler.write(ERROR_STRING)
-            return
-
-        if size == 0:
-            return
-
-        lines = self._target_file_handler.read_all_lines()
-        for i in range(address, address + size):
-            lines[i] = BLANK_STRING
+        lines[address] = value
         self._target_file_handler.write_lines(lines)
 
 class ReadCommand(Command):
@@ -121,6 +105,7 @@ class ReadCommand(Command):
     def execute(self):
         self.ssd.read(self._address)
 
+
 class WriteCommand(Command):
     def __init__(self, ssd: SSD, address: int, value: str, buffer_num: int):
         self.ssd = ssd
@@ -128,24 +113,20 @@ class WriteCommand(Command):
         self._value = value
         self.rename_buffer(buffer_num, 'W', address, value)
 
-    def rename_buffer(self, buffer_num, cmd_type, address, value=None):  # 임시 구현 (실제 버퍼 로직 필요 시 확장)
-        pass  # 버퍼 파일 rename 로직 미구현; 필요 시 추가
-
     def execute(self):
         self.ssd.write(self._address, self._value)
+
 
 class EraseCommand(Command):
     def __init__(self, ssd: SSD, address: int, size: int, buffer_num: int):
         self.ssd = ssd
         self._address = address
-        self._size = size  # 오타 수정
+        self._sise = size
         self.rename_buffer(buffer_num, 'E', address, size)
 
-    def rename_buffer(self, buffer_num, cmd_type, address, size=None):  # 임시 구현
-        pass  # 버퍼 파일 rename 로직 미구현; 필요 시 추가
-
     def execute(self):
-        self.ssd.erase(self._address, self._size)  # 인자 전달 추가
+        self.ssd.erase()
+
 
 def main():
     if len(sys.argv) < 3:
@@ -173,6 +154,7 @@ def main():
 
     # flush
     invoker.flush()
+
 
 if __name__ == "__main__":
     main()
