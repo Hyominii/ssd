@@ -34,19 +34,20 @@ class FileHandler(BaseHandler):
     def __init__(self, dirname="logs", filename: str = "latest.log", max_bytes=10 * 1024, compress=True):
         self.dirname = dirname
         self.filename = filename
+        self.log_path = f"{dirname}/{filename}"
         self.max_bytes = max_bytes
         self.compress = compress
         self._open_file()
 
     def _open_file(self):
         os.makedirs(self.dirname, exist_ok=True)
-        self.file = open(f"{self.dirname}/{self.filename}", "a", encoding="utf-8")
+        self.file = open(self.log_path, "a", encoding="utf-8")
 
     def _rotate(self):
         self.file.close()
         timestamp = datetime.now().strftime("%y%m%d_%Hh_%Mm_%Ss")
         rotated_name = f"until_{timestamp}.log"
-        os.rename(self.filename, rotated_name)
+        os.rename(self.log_path, f"{self.dirname}/{rotated_name}")
 
         self._open_file()
 
