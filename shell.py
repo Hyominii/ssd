@@ -293,7 +293,7 @@ class TestShellApp:
             if self.is_valid_command(command) == False:
                 self.print_invalid_command()
                 return
-            self.process_cmd(command, "runner")
+            self.process_cmd(command)
 
     def is_valid_command(self, command):
         parts = shlex.split(command)
@@ -308,7 +308,7 @@ class TestShellApp:
         expected_arg_count = spec["args"]
         return len(cmd_args) == expected_arg_count
 
-    def process_cmd(self, command, tag_name: str = ""):
+    def process_cmd(self, command):
         parts = shlex.split(command)
         if not parts:
             self.print_invalid_command()
