@@ -193,6 +193,11 @@ class TestShellApp:
         return SUCCESS
 
     @trace(logger)
+    def flush(self):
+        ret = self._ssd_driver.run_ssd_flush()
+        return ret
+
+    @trace(logger)
     def exit(self):
         raise SystemExit(0)
 
@@ -274,7 +279,7 @@ class TestShellApp:
                 return
 
         try:
-            if cmd_name in ["write", "erase", "erase_range"]:
+            if cmd_name in ["write", "erase", "erase_range", "flush"]:
                 ret = handler(*cmd_args)
                 if ret == SUCCESS:
                     print(f"[{cmd_name.capitalize()}] Done")
