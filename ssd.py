@@ -2,6 +2,8 @@ import glob
 import os
 import sys
 from pathlib import Path
+import re
+
 from abc import ABC, abstractmethod
 from file_handler import SimpleFileHandler, MultilineFileWriter
 
@@ -136,6 +138,27 @@ class SSD:
         for i in range(address, address + size):
             lines[i] = BLANK_STRING
         self._target_file_handler.write_lines(lines)
+
+    def _read_from_nand(self, lba: int) -> str:
+        if not os.path.exists(TARGET_FILE):
+            self._initialize_nand()
+
+        with open(TARGET_FILE, 'r') as f:
+            lines = f.readlines()
+
+        if len(lines) < SSD_SIZE:
+            lines += [BLANK_STRING + '\n'] * (SSD_SIZE - len(lines))
+
+        if 0 <= lba < SSD_SIZE:
+            value = lines[lba].strip()
+            if re.match(r'^0x[0-9A-F]{8}$', value):
+                return value
+        return BLANK_STRING
+
+    def _initialize_nand(self):
+        with open(TARGET_FILE, 'w') as f:
+            for _ in range(SSD_SIZE):
+                f.write(BLANK_STRING + '\n')
 
 
 class Command(ABC):
@@ -395,6 +418,21 @@ class CommandInvoker:
             self._commands.pop(i)
 
 
+
+
+    def fast_read(self, lba: int) -> str:
+        # 최근 명령어 우선으로 역순 스캔
+        for cmd in reversed(self._commands):
+            if cmd['type'] == 'W':
+                if cmd['lba'] == lba:
+                    return cmd['value']  # 최신 쓰기 값
+            elif cmd['type'] == 'E':
+                start = cmd['start_lba']
+                end = start + cmd['size']
+                if start <= lba < end:
+                    return BLANK_STRING  # 삭제됨
+
+        return self._ssd._read_from_nand(lba)  # 실제 NAND 읽기로 후퇴
 
 
 def main():
