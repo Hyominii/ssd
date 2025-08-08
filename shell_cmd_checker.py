@@ -1,6 +1,12 @@
 import shlex
 import subprocess
 
+from logger import Logger
+from decorators import trace
+from utils import get_class_and_method_name
+
+logger = Logger()
+
 COMMAND_SPEC = {
     "exit": (0, "exit", ""),
     "help": (0, "help", ""),
@@ -40,20 +46,28 @@ COMMAND_DESCRIPTION = [
     "  exit                               : 종료"
 ]
 
+
 def print_invalid_command():
     print("INVALID COMMAND")
+
 
 def is_valid_command(command):
     parts = shlex.split(command)
     if not parts:
+        logger.print(get_class_and_method_name(), "empty command")
         return False
 
     cmd_name, *cmd_args = parts
     spec = COMMAND_SPEC.get(cmd_name)
     if not spec:
+        logger.print(get_class_and_method_name(), f"entered invalid command => '{cmd_name}'")
         return False
 
     expected_arg_count, _, _ = spec
+
+    if len(cmd_args) != expected_arg_count:
+        logger.print(get_class_and_method_name(),
+                     f"the number of args({cmd_args}) is not same as {expected_arg_count}")
     return len(cmd_args) == expected_arg_count
 
 
@@ -61,11 +75,13 @@ def is_valid_address(address: str):
     try:
         address_int = int(address)
     except ValueError:
+        logger.print(get_class_and_method_name(), "정수형으로 변환할 수 없는 경우 (예: '0.5')")
         return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
 
     if 0 <= address_int <= 99:
         return True
     else:
+        logger.print(get_class_and_method_name(), "유효한 범위(0~99)를 벗어난 경우")
         return False  # 유효한 범위(0~99)를 벗어난 경우
 
 
@@ -74,6 +90,7 @@ def is_valid_size(lba_size):
         lba_size = int(lba_size)
         return True
     except ValueError:
+        logger.print(get_class_and_method_name(), "정수형으로 변환할 수 없는 경우 (예: '0.5')")
         return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
 
 
@@ -87,9 +104,11 @@ def format_hex_value(value: str) -> str | None:
     try:
         int_value = int(hex_str, 16)
     except ValueError:
+        logger.print(get_class_and_method_name(), "Value error 발생")
         return None
 
     if not (0 <= int_value <= 0xFFFFFFFF):
+        logger.print(get_class_and_method_name(), "유효한 범위(0 ~ 0xFFFFFFFF)를 벗어난 경우")
         return None
 
     return f'0x{int_value:08X}'

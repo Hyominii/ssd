@@ -5,9 +5,14 @@ import os
 import sys
 
 from ssd_driver import SSDDriver
+from logger import Logger
+from decorators import trace
+from utils import get_class_and_method_name
 import shell_cmd_checker as checker
 
 ROOT_DIR = os.path.dirname(__file__)
+
+logger = Logger()
 
 SUCCESS = 0
 ERROR = -1
@@ -30,12 +35,14 @@ class TestShellApp:
         self._ssd_output_cache = None
         self._is_runner = False
 
+    @trace(logger)
     def read(self, address: str):
         if not checker.is_valid_address(address):
             return READ_ERROR
 
         status = self._ssd_driver.run_ssd_read(address=address)
         if status == READ_ERROR:
+            logger.print(get_class_and_method_name(), "read error while run_ssd_read.")
             return status
         self._ssd_output_cache = self._ssd_driver.get_ssd_output()
         read_result = f'[Read] LBA {address.zfill(2)} : {self._ssd_output_cache}'
@@ -43,12 +50,14 @@ class TestShellApp:
             print(read_result)
         return status
 
+    @trace(logger)
     def full_read(self):
         for address in range(0, 100):
             if self.read(address=str(address)) == READ_ERROR:
                 return READ_ERROR
         return READ_SUCCESS
 
+    @trace(logger)
     def write(self, address: str, value: str):
         formatted_value = checker.format_hex_value(value)
         if formatted_value == None or not checker.is_valid_address(address):
@@ -57,6 +66,7 @@ class TestShellApp:
         ret = self._ssd_driver.run_ssd_write(address=address, value=formatted_value)
         return ret
 
+    @trace(logger)
     def full_write(self, value: str):
         formatted_value = checker.format_hex_value(value)
         if formatted_value == None:
@@ -67,6 +77,7 @@ class TestShellApp:
                 return WRITE_ERROR
         return WRITE_SUCCESS
 
+    @trace(logger)
     def erase(self, address: str, lba_size: str):
         if not checker.is_valid_address(address) or not checker.is_valid_size(lba_size):
             return ERASE_ERROR
@@ -75,6 +86,7 @@ class TestShellApp:
         status = self._erase_in_chunks(start_lba=start_lba, size=size)
         return status
 
+    @trace(logger)
     def erase_range(self, start_lba: str, end_lba: str):
         if not checker.is_valid_address(start_lba) or not checker.is_valid_address(end_lba):
             return ERASE_ERROR
@@ -91,12 +103,14 @@ class TestShellApp:
         status = self._erase_in_chunks(start_lba=low, size=size)
         return status
 
+    @trace(logger)
     def _erase_chunk(self, start_lba: int, size: int):
         status = self._ssd_driver.run_ssd_erase(address=str(start_lba), lba_size=str(size))
         # end = start + size - 1
         # print(f'[Erase] LBA {start:02d} ~ {end:02d}')
         return status
 
+    @trace(logger)
     def _erase_in_chunks(self, start_lba: int, size: int):
         """MAX_ERASE_SIZE 단위로 잘라서 _erase_chunk 호출."""
         for offset in range(0, size, MAX_ERASE_SIZE):
@@ -107,6 +121,7 @@ class TestShellApp:
                 return ERASE_ERROR
         return ERASE_SUCCESS
 
+    @trace(logger)
     def _read_and_compare(self, address: str, written_value: str):
         read_status = self.read(address)
         if read_status != READ_SUCCESS:
@@ -118,6 +133,7 @@ class TestShellApp:
 
         return True
 
+    @trace(logger)
     def full_write_and_read_compare(self):
         for block in range(0, 100, 5):
             write_value = "0x12345678"
@@ -128,6 +144,7 @@ class TestShellApp:
                     return ERROR
         return SUCCESS
 
+    @trace(logger)
     def partial_lba_write(self):
         for iter in range(30):
             self.write("4", "0x12345678")
@@ -140,6 +157,7 @@ class TestShellApp:
                     return ERROR
         return SUCCESS
 
+    @trace(logger)
     def write_read_aging(self):
         for iter in range(200):
             value = random.randint(0, 0xFFFFFFFF)
@@ -153,6 +171,7 @@ class TestShellApp:
                 return ERROR
         return SUCCESS
 
+    @trace(logger)
     def erase_write_test(self):
         self.erase_range("0", "2")
         for x in range(2, 97, 2):
@@ -165,6 +184,7 @@ class TestShellApp:
                 if not self._read_and_compare(str(x + i), "0x00000000"):
                     return ERROR
 
+    @trace(logger)
     def erase_write_aging(self):
         for iter in range(30):
             ret = self.erase_write_test()
@@ -172,13 +192,16 @@ class TestShellApp:
                 return ERROR
         return SUCCESS
 
+    @trace(logger)
     def exit(self):
         raise SystemExit(0)
 
+    @trace(logger)
     def help(self):
         print("\n".join(checker.COMMAND_DESCRIPTION))
         return SUCCESS
 
+    @trace(logger)
     def run(self):
         if len(sys.argv) > 1:
             script_file = sys.argv[1]
@@ -187,6 +210,7 @@ class TestShellApp:
             self.run_shell()
         return
 
+    @trace(logger)
     def run_shell(self, max_iterations: int = None):
         self._is_runner = False
         print(f"안녕하세요, SSD 검증용 Test Shell App을 시작합니다.\n")
@@ -203,6 +227,7 @@ class TestShellApp:
 
             self.process_cmd(command)
 
+    @trace(logger)
     def run_runner(self, script_file: str = ""):
         self._is_runner = True
         if not os.path.exists(script_file):
@@ -223,6 +248,7 @@ class TestShellApp:
             if self.process_cmd(command) == False:
                 return
 
+    @trace(logger)
     def process_cmd(self, command):
         parts = shlex.split(command)
         if not parts:
@@ -263,12 +289,14 @@ class TestShellApp:
                         print("FAIL!")
                         return False
 
-        except Exception:
+        except Exception as e:
+            logger.print(get_class_and_method_name(), str(e))
             ret = ERROR
 
         if ret != SUCCESS:
             checker.print_invalid_command()
 
+    @trace(logger)
     def range_resize(self, address: str, lba_size: str):
         start, size = int(address), int(lba_size)
         if size > 0:
