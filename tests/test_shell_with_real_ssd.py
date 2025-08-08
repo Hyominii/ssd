@@ -511,6 +511,57 @@ def test_shell_erase_write_aging(shell_app, mocker: MockerFixture, capsys):
     assert 'Pass' in captured.out
     #ToDo: check read value
 
+@pytest.mark.parametrize("valid_cmd", ["1_", "2_", "3_", "4_", "1_FullWriteAndReadCompare",
+                                       "2_PartialLBAWrite", "3_WriteReadAging", "4_EraseAndWriteAging"])
+def test_shell_runner_with_testfile_valid_cmd(shell_app, valid_cmd, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+    # 임시 파일 생성
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
+        temp_file.write(f"{valid_cmd}\n")
+        temp_file_path = temp_file.name
+
+    # Act
+    try:
+        shell_app.run_runner(temp_file_path)
+    finally:
+        # 테스트 후 파일 삭제
+        os.remove(temp_file_path)
+    # Assert
+    test_case = valid_cmd[:2]
+    assert f"{test_case}  ___  RUN...Pass" in capsys.readouterr().out
+
+@pytest.mark.parametrize("invalid_cmd", ["1_2", "he", " ", "None", "-",
+                                       "0_", "5_", "-1_"])
+def test_shell_runner_with_testfile_incorrect_cmd(shell_app, invalid_cmd, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+    # 임시 파일 생성
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
+        temp_file.write(f"{invalid_cmd}\n")
+        temp_file_path = temp_file.name
+
+    # Act
+    try:
+        shell_app.run_runner(temp_file_path)
+    finally:
+        # 테스트 후 파일 삭제
+        os.remove(temp_file_path)
+
+    # Assert
+    assert "INVALID COMMAND" in capsys.readouterr().out
+
+@pytest.mark.parametrize("invalid_file", [" ", f"{ROOT_DIR}\shell_scripts_.txt", f"shell_scripts.txt"])
+def test_shell_runner_with_invalid_testfile(shell_app, invalid_file, mocker: MockerFixture, capsys):
+    # Arrange
+    shell_app = TestShellApp()
+
+    # Act
+    shell_app.run_runner(invalid_file)
+
+    # Assert
+    assert "INVALID COMMAND" in capsys.readouterr().out
+
 def test_shell_read_after_read(shell_app, capsys):
     # Arrange & Act
     shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
@@ -528,63 +579,3 @@ def test_shell_read_after_read(shell_app, capsys):
     assert ret1 == READ_SUCCESS
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     assert '[Read] LBA 01 : 0x00000010' in captured.out
-
-def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app = TestShellApp()
-    # 임시 파일 생성
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
-        temp_file.write("1_\n")
-        temp_file_path = temp_file.name
-
-    # Act
-    try:
-        shell_app.run_runner(temp_file_path)
-    finally:
-        # 테스트 후 파일 삭제
-        os.remove(temp_file_path)
-    # Assert
-    assert "1_  ___  RUN...Pass" in capsys.readouterr().out
-
-
-def test_shell_runner_with_testfile_incorrect_cmd(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app = TestShellApp()
-    # 임시 파일 생성
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
-        temp_file.write("Hello\n")
-        temp_file_path = temp_file.name
-
-    # Act
-    try:
-        shell_app.run_runner(temp_file_path)
-    finally:
-        # 테스트 후 파일 삭제
-        os.remove(temp_file_path)
-
-    # Assert
-    assert "INVALID COMMAND" in capsys.readouterr().out
-
-
-def test_shell_runner_without_testfile(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app = TestShellApp()
-
-    # Act
-    shell_app.run_runner()
-
-    # Assert
-    assert "INVALID COMMAND" in capsys.readouterr().out
-
-
-def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app = TestShellApp()
-
-    # Act
-    scipt_file = f"{ROOT_DIR}\shell_scripts_.txt"
-    shell_app.run_runner(scipt_file)
-
-    # Assert
-    assert "INVALID COMMAND" in capsys.readouterr().out
-
