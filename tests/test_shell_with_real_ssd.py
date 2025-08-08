@@ -496,6 +496,21 @@ def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, caps
     assert 'Pass' in captured.out
     #ToDo: check read value
 
+def test_shell_erase_write_aging(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"4_EraseAndWriteAging", f"4_"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+    assert 'Pass' in captured.out
+    #ToDo: check read value
+
 def test_shell_read_after_read(shell_app, capsys):
     # Arrange & Act
     shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
