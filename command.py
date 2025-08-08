@@ -81,4 +81,3 @@ class CommandInvoker:
                 file_path = os.path.join(buffer_dir, f"{i}_empty")
                 with open(file_path, "w") as f:
                     f.write("")
-"""
