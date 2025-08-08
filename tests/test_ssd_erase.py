@@ -1,5 +1,6 @@
 import pytest
-from ssd import SSD, OUTPUT_FILE, TARGET_FILE, ERROR_STRING, BLANK_STRING
+import random
+from ssd import SSD, OUTPUT_FILE, TARGET_FILE, ERROR_STRING, BLANK_STRING, MIN_VALUE, MAX_VALUE
 
 
 def read_output() -> str:
@@ -12,11 +13,16 @@ def read_target() -> list[str]:
         return [line.rstrip('\n') for line in f]  # 변경: strip() → rstrip('\n') for consistency with file_handler
 
 
+def generate_random_hex():
+    rand_int = random.randint(MIN_VALUE, MAX_VALUE)
+    return f"0x{rand_int:08X}"
+
+
 @pytest.fixture
 def ssd():
     ssd_instance = SSD()  # 싱글톤 인스턴스 사용 (최신 SSD 클래스 반영)
     # 각 테스트 전에 target 파일 초기화 (싱글톤 상태 공유 방지)
-    ssd_instance._target_file_handler.write_lines([BLANK_STRING for _ in range(100)])
+    ssd_instance._target_file_handler.write_lines([generate_random_hex() for _ in range(100)])
     ssd_instance._output_file_handler.write("")  # output 파일 초기화
     return ssd_instance
 
