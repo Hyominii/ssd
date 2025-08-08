@@ -151,3 +151,183 @@ def test_06_merge_erase(ctx):
         "4_empty",
         "5_empty",
     }
+
+def test_07_ignore_erase(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # E 1 4  →  W 0 …  →  E 0 5 (상위범위)
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 0, 1, invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 0, "0x12341234", invoker.num_commands() + 1)
+    )
+
+    # 버퍼에는 최종 Erase 하나만 남아야 함
+    assert invoker.num_commands() == 1
+    cmd = invoker.get_buffer()[0]
+    assert isinstance(cmd, ssd.WriteCommand)
+
+    # 파일도 1_E_0_5 하나 + 2~5_empty 네 개
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == {
+        "1_W_0_0x12341234",
+        "2_empty",
+        "3_empty",
+        "4_empty",
+        "5_empty",
+    }
+
+def test_my1(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 20, 5, invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 30, "0xAAAABBBB", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 30, "0x12345678", invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 20, 10, invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 25, 10, invoker.num_commands() + 1)
+    )
+
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert "1_E_20_10" in files
+    assert "2_E_30_5" in files
+
+
+def test_my2(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 0, 8, invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 30, "0xAAAABBBB", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 30, "0x12345678", invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 7, 8, invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 14, 10, invoker.num_commands() + 1)
+    )
+
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert "1_W_30_0x12345678" in files
+    assert "2_E_0_10" in files
+    assert "3_E_10_10" in files
+    assert "4_E_20_4" in files
+
+
+def test_my3(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 0, 8, invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 30, "0xAAAABBBB", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 30, "0x12345678", invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 7, 8, invoker.num_commands() + 1)
+    )
+
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 14, 10, invoker.num_commands() + 1)
+    )
+
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert "1_W_30_0x12345678" in files
+    assert "2_E_0_10" in files
+    assert "3_E_10_10" in files
+    assert "4_E_20_4" in files
+
+
+def test_my4(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 0, "0x0000000a", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 1, "0x0000000b", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 2, "0x0000000c", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 0, 3, invoker.num_commands() + 1)
+    )
+
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert "1_E_0_3" in files
+
+
+def test_my5(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 0, "0x0000000a", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 1, "0x0000000b", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 2, "0x0000000c", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 0, 3, invoker.num_commands() + 1)
+    )
+
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert "1_E_0_3" in files
+
+
+def test_my6(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 10, "0x0000000a", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 11, 2, invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 11, "0x0000000b", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 12, 2, invoker.num_commands() + 1)
+    )
+
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    # failed 아래처럼 나옴
+    assert "1_W_10_0x0000000a" in files
+    assert "2_W_11_0x0000000b" in files
+    assert "3_E_12_2" in files
