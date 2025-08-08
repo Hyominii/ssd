@@ -1,5 +1,9 @@
 import subprocess
 import os
+from logger import Logger
+from utils import get_class_and_method_name
+
+logger = Logger()
 
 ROOT_DIR = os.path.dirname(__file__)
 SUCCESS = 0
@@ -12,6 +16,7 @@ class SSDDriver:
         if result.returncode == 0:
             return SUCCESS
         else:
+            logger.print(get_class_and_method_name(), f"subprocess returned {result.returncode}")
             return ERROR
 
     def run_ssd_write(self, address: str, value: str):
