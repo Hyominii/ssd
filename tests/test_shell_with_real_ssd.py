@@ -71,7 +71,6 @@ def test_shell_write_wrong_address(shell_app, wrong_address, mocker: MockerFixtu
     assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
-
 @pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
@@ -102,37 +101,68 @@ def test_shell_read(shell_app, mocker: MockerFixture, capsys):
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     assert 'INVALID COMMAND' not in captured.out
 
-def test_shell_read_with_real(capsys):
+@pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
+def test_shell_read_test_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
     # Arrange
-    shell_app = TestShellApp()
+    cmd = [f"write {valid_address} 0x00000001", f"read {valid_address}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret = shell_app.read(address="0")
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
-    assert ret == READ_SUCCESS
+    assert '[Write] Done' in captured.out
+    assert f'[Read] LBA {int(valid_address):02} : 0x00000001' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
 
-
-def test_shell_read_after_write(shell_app, capsys):
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
+def test_shell_read_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
     # Arrange
-    shell_app._ssd_driver.run_ssd_write.return_value = WRITE_SUCCESS
-    shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
-    shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
+    cmd = [f"write 00 {valid_value}", f"read 00"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret_write = shell_app.write(address="0", value="0x00000000")
-    ret_read = shell_app.read(address="0")
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
-    assert ret_write == WRITE_SUCCESS
-    assert ret_read == READ_SUCCESS
-    assert '[Read] LBA 00 : 0x00000000' in captured.out
+    int_value = int(valid_value, 16)
+    assert '[Write] Done' in captured.out
+    assert f'[Read] LBA 00 : 0x{int_value:08X}' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
 
-    shell_app._ssd_driver.run_ssd_write.assert_called_once_with(address="0", value="0x00000000")
-    shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
+@pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
+def test_shell_read_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"{wrong_address} 0x12345678", f"read {wrong_address}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Write] Done' not in captured.out
+    assert 'INVALID COMMAND' in captured.out
+
+@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
+def test_shell_read_after_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"00 {wrong_value}", f"read 00"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Write] Done' not in captured.out
+    assert 'INVALID COMMAND' in captured.out
 
 def test_shell_read_after_read(shell_app, capsys):
     # Arrange & Act
