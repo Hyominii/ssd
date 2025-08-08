@@ -13,9 +13,6 @@ class FileHandler(ABC):
 class SimpleFileHandler(FileHandler):
     def __init__(self, filename: str):
         self._filename = filename
-        if not os.path.exists(filename):
-            with open(self._filename, 'w', encoding='utf-8') as f:
-                f.write("")
 
     def write(self, data: str):
         with open(self._filename, 'w', encoding='utf-8') as f:
