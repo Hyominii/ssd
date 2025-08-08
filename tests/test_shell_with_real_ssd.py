@@ -137,7 +137,7 @@ def test_shell_write_valid_value(shell_app, valid_value, mocker: MockerFixture, 
 @pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
 def test_shell_write_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
     # Arrange
-    cmd = [f"{wrong_address} 0x12345678"]
+    cmd = [f"write {wrong_address} 0x12345678"]
     cmd_len = len(cmd)
     mocker.patch("builtins.input", side_effect=cmd)
 
@@ -152,7 +152,7 @@ def test_shell_write_wrong_address(shell_app, wrong_address, mocker: MockerFixtu
 @pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
-    cmd = [f"00 {wrong_value}"]
+    cmd = [f"write 00 {wrong_value}"]
     cmd_len = len(cmd)
     mocker.patch("builtins.input", side_effect=cmd)
 
@@ -215,7 +215,7 @@ def test_shell_read_valid_value(shell_app, valid_value, mocker: MockerFixture, c
 @pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
 def test_shell_read_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
     # Arrange
-    cmd = [f"{wrong_address} 0x12345678", f"read {wrong_address}"]
+    cmd = [f"write {wrong_address} 0x12345678", f"read {wrong_address}"]
     cmd_len = len(cmd)
     mocker.patch("builtins.input", side_effect=cmd)
 
@@ -230,7 +230,7 @@ def test_shell_read_wrong_address(shell_app, wrong_address, mocker: MockerFixtur
 @pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_read_after_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
-    cmd = [f"00 {wrong_value}", f"read 00"]
+    cmd = [f"write 00 {wrong_value}", f"read 00"]
     cmd_len = len(cmd)
     mocker.patch("builtins.input", side_effect=cmd)
 
@@ -240,6 +240,126 @@ def test_shell_read_after_write_wrong_value(shell_app, wrong_value, mocker: Mock
 
     # Assert
     assert '[Write] Done' not in captured.out
+    assert 'INVALID COMMAND' in captured.out
+
+def test_shell_erase(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["erase 0 1"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
+
+@pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
+def test_shell_erase_with_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"erase {valid_address} 1"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
+
+@pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
+def test_shell_erase_with_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"erase {wrong_address} 1"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase] Done' not in captured.out
+    assert 'INVALID COMMAND' in captured.out
+
+@pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
+@pytest.mark.parametrize("valid_size", ["1", "100", "4294967295", "0", "-1", "-100", "-4294967295"])
+def test_shell_erase_with_valid_size(shell_app, valid_address, valid_size, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"erase {valid_address} {valid_size}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
+
+@pytest.mark.parametrize("invalid_size", ["0.5", "-1.5", "0xa", "-0x1", "0xF", "-", " ", "null", "A"])
+def test_shell_erase_with_invalid_size(shell_app, invalid_size, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"erase 00 {invalid_size}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase] Done' not in captured.out
+    assert 'INVALID COMMAND' in captured.out
+
+def test_shell_erase_range(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["erase_range 0 1", "erase_range 1 0"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase_range] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
+
+@pytest.mark.parametrize("valid_range", [("0", "0"), ("99", "99"), ("0", "99"), ("99", "0")])
+def test_shell_erase_range_with_valid_range(shell_app, valid_range, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"erase_range {valid_range[0]} {valid_range[1]}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase_range] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
+
+@pytest.mark.parametrize("invalid_range", [("-1", "10"), ("1", "100"), ("1.5", "10"), ("10", "10.5")
+                                           , ("a", "10.5"), ("10", ".5")])
+def test_shell_erase_range_invalid_range(shell_app, invalid_range, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"erase_range {invalid_range[0]} {invalid_range[1]}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Erase_range] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
 def test_shell_cmd_fullwrite(shell_app, mocker: MockerFixture, capsys):
@@ -394,7 +514,6 @@ def test_shell_read_after_read(shell_app, capsys):
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     assert '[Read] LBA 01 : 0x00000010' in captured.out
 
-
 def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     shell_app = TestShellApp()
@@ -454,90 +573,3 @@ def test_shell_runner_with_wrong_testfile(shell_app, mocker: MockerFixture, caps
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
 
-
-@pytest.mark.parametrize("size", ["0.5", "-1.5", "0xa", "-0x1"])
-def test_shell_erase_invalid_size(shell_app, size):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
-
-    # Act
-    ret_fail = shell_app.erase(address="0", lba_size=size)
-
-    # Assert
-    assert ERASE_ERROR == ret_fail
-
-
-def test_shell_erase(shell_app):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
-
-    # Act
-    ret_pass = shell_app.erase(address="0", lba_size="1")
-
-    # Assert
-    assert ERASE_SUCCESS == ret_pass
-
-
-def test_shell_erase_resize(shell_app, mocker):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
-    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
-
-    # Act
-    ret_pass = shell_app.erase(address="0", lba_size="1000")
-
-    # Assert
-    assert ERASE_SUCCESS == ret_pass
-    shell_app._erase_in_chunks.assert_called_once_with(start_lba=0, size=100)
-
-
-def test_shell_erase_resize_minus(shell_app, mocker):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
-    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
-
-    # Act
-    ret_pass = shell_app.erase(address="30", lba_size="-20")
-
-    # Assert
-    assert ERASE_SUCCESS == ret_pass
-    shell_app._erase_in_chunks.assert_called_once_with(start_lba=11, size=20)
-
-
-def test_shell_erase_range(shell_app, mocker):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
-    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
-
-    # Act
-    ret_pass = shell_app.erase_range(start_lba="31", end_lba="60")
-
-    # Assert
-    assert ERASE_SUCCESS == ret_pass
-    shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
-
-
-def test_shell_erase_range_reverse(shell_app, mocker):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
-    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
-
-    # Act
-    ret_pass = shell_app.erase_range(start_lba="60", end_lba="31")
-
-    # Assert
-    assert ERASE_SUCCESS == ret_pass
-    shell_app._erase_in_chunks.assert_called_once_with(start_lba=31, size=30)
-
-
-@pytest.mark.parametrize("range", [("-1", "10"), ("1", "100"), ("1.5", "10"), ("10", "10.5")])
-def test_shell_erase_invalid_range(shell_app, mocker, range):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_erase.return_value = ERASE_SUCCESS
-    mocker.patch.object(shell_app, "_erase_in_chunks", return_value=ERASE_SUCCESS, )
-
-    # Act
-    ret_pass = shell_app.erase_range(start_lba=range[0], end_lba=range[1])
-
-    # Assert
-    assert ERASE_ERROR == ret_pass
