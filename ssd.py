@@ -251,6 +251,8 @@ class CommandInvoker:
                 # 파일 새로 생성
                 with open(target_path, "w") as f:
                     f.write("")
+    def get_buffer(self):
+        return self._commands
 
 def main():
     if len(sys.argv) < 1:
