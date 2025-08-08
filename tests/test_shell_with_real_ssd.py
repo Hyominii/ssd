@@ -243,6 +243,93 @@ def test_shell_read_after_write_wrong_value(shell_app, wrong_value, mocker: Mock
     assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
+def test_shell_cmd_fullwrite(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["fullwrite 0x00000001"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+
+def test_shell_cmd_fullread(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["fullwrite 0x00000001", "fullread"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+    for address in range(100):
+        assert f'[Read] LBA {address:02} : 0x00000001' in captured.out
+
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
+def test_shell_cmd_fullwrite_with_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"fullwrite {valid_value}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+
+@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
+def test_shell_cmd_fullwrite_with_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"fullwrite {wrong_value}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' in captured.out
+
+def test_shell_cmd_fullread(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["fullwrite 0x00000001", "fullread"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+    for address in range(100):
+        assert f'[Read] LBA {address:02} : 0x00000001' in captured.out
+
+@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
+def test_shell_cmd_fullread_after_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"fullwrite 0x00000001", f"fullwrite {wrong_value}", "fullread"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' in captured.out
+    for address in range(100):
+        assert f'[Read] LBA {address:02} : 0x00000001' in captured.out
+
 def test_shell_read_after_read(shell_app, capsys):
     # Arrange & Act
     shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
@@ -261,48 +348,7 @@ def test_shell_read_after_read(shell_app, capsys):
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     assert '[Read] LBA 01 : 0x00000010' in captured.out
 
-def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
-    mocker.patch("builtins.input", side_effect=["fullread"])
-    mock_method = mocker.patch("shell.TestShellApp.full_read")
-    mock_method.return_value = 0
-    shell_app.run_shell(1)
 
-    mock_method.assert_called_once()
-
-
-def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
-    mocker.patch("builtins.input", side_effect=["fullwrite 0x00010000"])
-    mock_method = mocker.patch("shell.TestShellApp.full_write")
-    mock_method.return_value = 0
-    shell_app.run_shell(1)
-
-    mock_method.assert_called_once()
-
-
-
-
-def test_shell_full_read(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_read.side_effect = [0] * 100
-    shell_app._ssd_driver.get_ssd_output.side_effect = ["0x00000000"] * 100
-
-    # Act
-    ret = shell_app.full_read()
-    captured = capsys.readouterr()
-    assert ret == READ_SUCCESS
-    assert shell_app._ssd_driver.run_ssd_read.call_count == 100
-
-
-def test_shell_full_write(shell_app, mocker: MockerFixture):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 100
-
-    # Act
-    ret = shell_app.full_write(value="0x12345678")
-
-    # Assert
-    assert ret == WRITE_SUCCESS
-    assert shell_app._ssd_driver.run_ssd_write.call_count == 100
 
 
 def test_shell_full_write_wrong_format():
