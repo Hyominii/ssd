@@ -14,80 +14,93 @@ def shell_app(mocker):
 
 def test_shell_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
+    cmd = ["write 0 0x00000001"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret = shell_app.run_shell(1)
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
     assert '[Write] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
 
 @pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
 def test_shell_write_test_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
     # Arrange
-    mocker.patch("builtins.input", side_effect=[f"write {valid_address} 0x00000001"])
+    cmd = [f"write {valid_address} 0x00000001"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret = shell_app.run_shell(1)
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
     assert '[Write] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
 
 @pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
 def test_shell_write_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
     # Arrange
-    mocker.patch("builtins.input", side_effect=[f"write 00 {valid_value} "])
+    cmd = [f"write 00 {valid_value}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret = shell_app.run_shell(1)
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
     assert '[Write] Done' in captured.out
+    assert 'INVALID COMMAND' not in captured.out
 
 @pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
 def test_shell_write_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
     # Arrange
-    wrong_address_with_valid_value = f"{wrong_address} 0x12345678"
-    mocker.patch("builtins.input", side_effect=wrong_address_with_valid_value)
+    cmd = [f"{wrong_address} 0x12345678"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret = shell_app.run_shell(1)
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
+    assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
 
 @pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
-    wrong_address_with_valid_value = f"00 {wrong_value}"
-    mocker.patch("builtins.input", side_effect=wrong_address_with_valid_value)
+    cmd = [f"00 {wrong_value}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret = shell_app.run_shell(1)
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
+    assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
-def test_shell_read(shell_app, capsys):
+def test_shell_read(shell_app, mocker: MockerFixture, capsys):
     # Arrange
-    shell_app._ssd_driver.run_ssd_read.return_value = 0
-    shell_app._ssd_driver.get_ssd_output.return_value = "0x00000000"
+    cmd = ["write 00 0x00000000", "read 0"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
 
     # Act
-    ret = shell_app.read(address="0")
+    ret = shell_app.run_shell(cmd_len)
     captured = capsys.readouterr()
 
     # Assert
-    assert ret == READ_SUCCESS
+    assert '[Write] Done' in captured.out
     assert '[Read] LBA 00 : 0x00000000' in captured.out
-    shell_app._ssd_driver.run_ssd_read.assert_called_once_with(address="0")
-
+    assert 'INVALID COMMAND' not in captured.out
 
 def test_shell_read_with_real(capsys):
     # Arrange
