@@ -2,7 +2,12 @@ import os
 import shutil
 import pytest
 
-from ssd import *
+from ssd import SSD, CommandInvoker, WriteCommand, EraseCommand, BLANK_STRING
+
+dir_buffer = "C:/tmp_yp/ssd/buffer"
+file_nand = "C:/tmp_y/ssd/ssd_nand.txt"
+file_output = "C:/tmp_yp/ssd/ssd_output.txt"
+
 
 @pytest.fixture(scope="session")
 def ctx():
@@ -11,9 +16,15 @@ def ctx():
     SSD Invoker 생성 후 곧바로 flush() -> buffer 슬롯을 1_empty~5_empty 로 맞춤
     세션 동안 같은 객체·상태를 공유
     """
-    if os.path.isdir(SSD.BUFFER_DIR):
-        shutil.rmtree(SSD.BUFFER_DIR)
-    for f in (SSD.TARGET_FILE, SSD.OUTPUT_FILE):
+    # if os.path.isdir(SSD.BUFFER_DIR):
+    #     shutil.rmtree(SSD.BUFFER_DIR)
+    # for f in (SSD.TARGET_FILE, SSD.OUTPUT_FILE):
+    #     if os.path.exists(f):
+    #         os.remove(f)
+
+    if os.path.isdir(dir_buffer):
+        shutil.rmtree(dir_buffer)
+    for f in (file_nand, file_output):
         if os.path.exists(f):
             os.remove(f)
 
