@@ -154,6 +154,7 @@ class Command(ABC):
                 # print(f"Renamed {filename} -> {}2_string")
                 break  # ✅ 하나만 처리하고 끝냄
 
+
 class ReadCommand(Command):
     def __init__(self, ssd: SSD, address: int):
         self.ssd = ssd
@@ -213,10 +214,87 @@ class CommandInvoker:
                 print(f"Unknown command: {cmd}")
                 sys.exit(1)
 
-    def add_command(self, cmd: Command):
+    def _sync_buffer_files(self) -> None:
+        os.makedirs(BUFFER_DIR, exist_ok=True)
+        for f in os.listdir(BUFFER_DIR):
+            os.remove(os.path.join(BUFFER_DIR, f))
+        for i in range(1, 6):
+            open(os.path.join(BUFFER_DIR, f"{i}_empty"), "w").close()
+        for idx, cmd in enumerate(self._commands, 1):
+            if isinstance(cmd, WriteCommand):
+                cmd.rename_buffer(idx, 'W', cmd._address, cmd._value)
+            elif isinstance(cmd, EraseCommand):
+                cmd.rename_buffer(idx, 'E', cmd._address, cmd._size)
+
+    def add_command(self, cmd: Command) -> None:
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
-        self._commands.append(cmd)
+
+        if isinstance(cmd, EraseCommand):
+            merged = self._merge_erase_if_possible(cmd)
+            if merged:
+                self._commands.extend(merged)
+            else:
+                self._commands.append(cmd)
+        else:
+            self._commands.append(cmd)
+        self._sync_buffer_files()
+
+    def _merge_erase_if_possible(self, incoming_cmd: EraseCommand) -> list[EraseCommand] | None:
+        # range of the new (incoming) erase request
+        incoming_start_addr = incoming_cmd._address
+        incoming_end_addr = incoming_start_addr + incoming_cmd._size
+
+        # track commands that will be removed because they merge with the incoming one
+        indices_to_remove: list[int] = []
+
+        # running merged range (will expand if we find overlaps/adjacency)
+        merged_start_addr = incoming_start_addr
+        merged_end_addr = incoming_end_addr
+
+        for idx, queued_cmd in enumerate(self._commands):
+            if not isinstance(queued_cmd, EraseCommand):
+                continue
+
+            queued_start_addr = queued_cmd._address
+            queued_end_addr = queued_start_addr + queued_cmd._size
+
+            # overlap or directly adjacent?
+            has_overlap_or_adjacent = (
+                    queued_end_addr == merged_start_addr
+                    or merged_end_addr == queued_start_addr
+                    or (queued_start_addr <= merged_start_addr < queued_end_addr)
+                    or (merged_start_addr <= queued_start_addr < merged_end_addr)
+            )
+
+            if has_overlap_or_adjacent:
+                merged_start_addr = min(merged_start_addr, queued_start_addr)
+                merged_end_addr = max(merged_end_addr, queued_end_addr)
+                indices_to_remove.append(idx)
+
+        # nothing merged → caller should append the incoming command as-is
+        if not indices_to_remove:
+            return None
+
+        # drop all commands that we merged with
+        for idx in reversed(indices_to_remove):
+            del self._commands[idx]
+
+        # create replacement commands (split into chunks ≤ 10 lines each)
+        total_merged_size = merged_end_addr - merged_start_addr
+        replacement_cmds: list[EraseCommand] = []
+        current_addr = merged_start_addr
+        remaining_size = total_merged_size
+
+        while remaining_size > 0:
+            chunk_size = min(10, remaining_size)
+            replacement_cmds.append(
+                EraseCommand(incoming_cmd.ssd, current_addr, chunk_size, 0)
+            )
+            current_addr += chunk_size
+            remaining_size -= chunk_size
+
+        return replacement_cmds
 
     def flush(self):
         for cmd in self._commands:
@@ -245,8 +323,10 @@ class CommandInvoker:
                 # 파일 새로 생성
                 with open(target_path, "w") as f:
                     f.write("")
+
     def get_buffer(self):
         return self._commands
+
 
 def main():
     if len(sys.argv) < 1:
