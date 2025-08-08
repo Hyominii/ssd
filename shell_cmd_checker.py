@@ -16,6 +16,7 @@ COMMAND_SPEC = {
     "erase": (2, "erase", ""),
     "erase_range": (2, "erase_range", ""),
     "fullwrite": (1, "full_write", ""),
+    "flush": (0, "flush", ""),
     # scripts-tagged commands
     "1_": (0, "full_write_and_read_compare", "scripts"),
     "1_FullWriteAndReadCompare": (0, "full_write_and_read_compare", "scripts"),
@@ -42,6 +43,7 @@ COMMAND_DESCRIPTION = [
     "  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회",
     "  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
     "  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함",
+    "  flush                              : SSD의 command buffer를 비움",
     "  help                               : 도움말 출력",
     "  exit                               : 종료"
 ]

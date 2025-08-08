@@ -31,6 +31,10 @@ class SSDDriver:
         command = ['python', 'ssd.py', 'R', str(address)]
         return self.run_cmd_to_ssd(command)
 
+    def run_ssd_flush(self):
+        command = ['python', 'ssd.py', 'F']
+        return self.run_cmd_to_ssd(command)
+
     def get_ssd_output(self, file_path: str = ROOT_DIR + "/ssd_output.txt"):
         with open(file_path, 'r', encoding='utf-8') as f:
             line = f.readline().rstrip("\n")
