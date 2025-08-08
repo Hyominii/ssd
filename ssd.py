@@ -356,35 +356,69 @@ class CommandInvoker:
 
     def ignore_cmd(self, new_cmd: Command):
         """
-        버퍼에 이미 존재하는 불필요한 명령을 제거.
-        - Write  : 같은 LBA에 대한 이전 Write 모두 제거
-        - Erase  : (a) 지우려는 범위에 포함된 모든 Write 제거
-                   (b) 완전히 포함되는 이전 Erase 제거
+        중복·무효 명령 제거 및 Erase 축소
+        ─────────────────────────────────────
+        • Write
+            – 같은 LBA의 이전 Write 제거
+            – 쓰려는 LBA를 포함하는 Erase 가 있으면
+              · LBA가 Erase 시작 ➜ addr+1, size-1
+              · LBA가 Erase 끝   ➜ size-1
+              · size==0 → Erase 제거
+        • Erase
+            – 범위에 포함된 모든 Write 제거
+            – 자신이 완전히 감싸는 이전 Erase 제거
         """
-        def _erase_range(cmd):
+
+        def erange(cmd):
             return range(cmd._address, cmd._address + cmd._size)
 
-        removed_idx = []
-        for idx, old in enumerate(self._commands):
-            if isinstance(new_cmd, WriteCommand):
-                if isinstance(old, WriteCommand) and old._address == new_cmd._address:
-                    removed_idx.append(idx)
+        removed = []
+        # ───── Write 추가 시 ─────
+        if isinstance(new_cmd, WriteCommand):
+            w = new_cmd._address
+            for idx, old in enumerate(self._commands):
+                # ① 같은 LBA Write 제거
+                if isinstance(old, WriteCommand) and old._address == w:
+                    removed.append(idx)
 
-            elif isinstance(new_cmd, EraseCommand):
-                n_range = _erase_range(new_cmd)
+                # ② 포함 Erase 축소 / 제거
+                elif isinstance(old, EraseCommand) and w in erange(old):
+                    if w == old._address:  # 앞쪽 잘라내기
+                        old._address += 1
+                        old._size -= 1
+                    elif w == old._address + old._size - 1:  # 뒤쪽 잘라내기
+                        old._size -= 1
 
-                # (a) 기존 Write 가 지워질 범위에 포함
-                if isinstance(old, WriteCommand) and old._address in n_range:
-                    removed_idx.append(idx)
+                    # 파일명 갱신
+                    if old._size > 0:
+                        slot = old.path.split("_")[0]  # '2'
+                        new_name = f"{slot}_E_{old._address}_{old._size}"
+                        if new_name != old.path:
+                            os.rename(os.path.join(BUFFER_DIR, old.path),
+                                      os.path.join(BUFFER_DIR, new_name))
+                            old.path = new_name
+                    else:
+                        removed.append(idx)
 
-                # (b) 기존 Erase 가 새 Erase 범위에 완전히 포함
+        # ───── Erase 추가 시 ─────
+        elif isinstance(new_cmd, EraseCommand):
+            n_rng = erange(new_cmd)
+            for idx, old in enumerate(self._commands):
+                # ③ 범위에 포함된 Write 제거
+                if isinstance(old, WriteCommand) and old._address in n_rng:
+                    removed.append(idx)
+
+                # ④ 완전히 포함되는 Erase 제거
                 elif isinstance(old, EraseCommand):
-                    o_range = _erase_range(old)
-                    if o_range.start >= n_range.start and o_range.stop <= n_range.stop:
-                        removed_idx.append(idx)
+                    o_rng = erange(old)
+                    if o_rng.start >= n_rng.start and o_rng.stop <= n_rng.stop:
+                        removed.append(idx)
 
-        for i in sorted(removed_idx, reverse=True):
-            old = self._commands.pop(i)
+        # 실제 제거(뒤에서부터)
+        for i in sorted(removed, reverse=True):
+            self._commands.pop(i)
+
+
 
 
     # def fast_read(self, lba: int) -> str:
