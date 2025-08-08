@@ -1,18 +1,21 @@
 import glob
 import os
 import sys
-
+from pathlib import Path
 from abc import ABC, abstractmethod
 from file_handler import SimpleFileHandler, MultilineFileWriter
 
-OUTPUT_FILE = 'ssd_output.txt'
-TARGET_FILE = 'ssd_nand.txt'
+# ssd.py 파일이 있는 디렉토리 내 (프로젝트 루트) 절대 경로
+_PROJECT_ROOT = Path(__file__).resolve().parent
+BUFFER_DIR   = str(_PROJECT_ROOT / "buffer")   # ← 여기만 변경
+OUTPUT_FILE  = str(_PROJECT_ROOT / "ssd_output.txt")
+TARGET_FILE  = str(_PROJECT_ROOT / "ssd_nand.txt")
+
 BLANK_STRING = "0x00000000"
 ERROR_STRING = 'ERROR'
 SSD_SIZE = 100
 MIN_VALUE = 0x00000000
 MAX_VALUE = 0xFFFFFFFF
-BUFFER_DIR = 'buffer'
 MAX_COMMANDS = 5
 
 
@@ -227,17 +230,17 @@ class CommandInvoker:
                 cmd.rename_buffer(idx, 'E', cmd._address, cmd._size)
 
     def add_command(self, cmd: Command) -> None:
+        self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
+
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
 
         if isinstance(cmd, EraseCommand):
             merged = self._merge_erase_if_possible(cmd)
-            if merged:
-                self._commands.extend(merged)
-            else:
-                self._commands.append(cmd)
-        else:
-            self._commands.append(cmd)
+            if merged: self._commands.extend(merged)
+            else : self._commands.append(cmd)
+        else : self._commands.append(cmd)
+
         self._sync_buffer_files()
 
     def _merge_erase_if_possible(self, incoming_cmd: EraseCommand) -> list[EraseCommand] | None:
@@ -326,6 +329,38 @@ class CommandInvoker:
 
     def get_buffer(self):
         return self._commands
+
+    def ignore_cmd(self, new_cmd: Command):
+        """
+        버퍼에 이미 존재하는 불필요한 명령을 제거.
+        - Write  : 같은 LBA에 대한 이전 Write 모두 제거
+        - Erase  : (a) 지우려는 범위에 포함된 모든 Write 제거
+                   (b) 완전히 포함되는 이전 Erase 제거
+        """
+        def _erase_range(cmd):
+            return range(cmd._address, cmd._address + cmd._size)
+
+        removed_idx = []
+        for idx, old in enumerate(self._commands):
+            if isinstance(new_cmd, WriteCommand):
+                if isinstance(old, WriteCommand) and old._address == new_cmd._address:
+                    removed_idx.append(idx)
+
+            elif isinstance(new_cmd, EraseCommand):
+                n_range = _erase_range(new_cmd)
+
+                # (a) 기존 Write 가 지워질 범위에 포함
+                if isinstance(old, WriteCommand) and old._address in n_range:
+                    removed_idx.append(idx)
+
+                # (b) 기존 Erase 가 새 Erase 범위에 완전히 포함
+                elif isinstance(old, EraseCommand):
+                    o_range = _erase_range(old)
+                    if o_range.start >= n_range.start and o_range.stop <= n_range.stop:
+                        removed_idx.append(idx)
+
+        for i in sorted(removed_idx, reverse=True):
+            old = self._commands.pop(i)
 
 
 def main():
