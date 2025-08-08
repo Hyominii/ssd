@@ -4,7 +4,6 @@ import random
 import os
 import sys
 
-from shell_cmd_checker import COMMAND_SPEC
 from ssd_driver import SSDDriver
 import shell_cmd_checker as checker
 
@@ -220,7 +219,7 @@ class TestShellApp:
             return
 
         for command in commands:
-            if checker.is_valid_command(command) == False:
+            if not checker.is_valid_command(command):
                 checker.print_invalid_command()
                 return
             if self.process_cmd(command) == False:
@@ -233,7 +232,7 @@ class TestShellApp:
             return
 
         cmd_name, *cmd_args = parts
-        spec = COMMAND_SPEC.get(cmd_name)
+        spec = checker.COMMAND_SPEC.get(cmd_name)
         if not spec:
             checker.print_invalid_command()
             return
@@ -252,13 +251,13 @@ class TestShellApp:
 
         try:
             if cmd_name in ["write", "erase", "erase_range"]:
-                ret = handler(cmd_args)
+                ret = handler(*cmd_args)
                 if ret == SUCCESS:
                     print(f"[{cmd_name.capitalize()}] Done")
             else:
                 if self._is_runner:
                     print(f"{cmd_name}  ___  RUN...", flush=True, end="")
-                ret = handler(cmd_args) if expected_arg_count else handler()
+                ret = handler(*cmd_args) if expected_arg_count else handler()
                 if tags == "scripts":
                     if ret == SUCCESS:
                         print("Pass")
