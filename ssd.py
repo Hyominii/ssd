@@ -211,6 +211,7 @@ class EraseCommand(Command):
 class CommandInvoker:
     def __init__(self, ssd: SSD):
         self._commands = []
+        self._ssd = ssd
 
         if not os.path.isdir(BUFFER_DIR):
             self.init_command_buffer()
@@ -350,19 +351,28 @@ class CommandInvoker:
         return self._commands
 
 
-    def fast_read(self, lba: int) -> str:
-        # 최근 명령어 우선으로 역순 스캔
-        for cmd in reversed(self._commands):
-            if cmd['type'] == 'W':
-                if cmd['lba'] == lba:
-                    return cmd['value']  # 최신 쓰기 값
-            elif cmd['type'] == 'E':
-                start = cmd['start_lba']
-                end = start + cmd['size']
-                if start <= lba < end:
-                    return BLANK_STRING  # 삭제됨
+    # def fast_read(self, lba: int) -> str:
+    #     # 최근 명령어 우선으로 역순 스캔
+    #     for cmd in reversed(self._commands):
+    #         if cmd['type'] == 'W':
+    #             if cmd['lba'] == lba:
+    #                 return cmd['value']  # 최신 쓰기 값
+    #         elif cmd['type'] == 'E':
+    #             start = cmd['start_lba']
+    #             end = start + cmd['size']
+    #             if start <= lba < end:
+    #                 return BLANK_STRING  # 삭제됨
+    #
+    #     return self._ssd._read_from_nand(lba)  # 실제 NAND 읽기로 후퇴
 
-        return self._ssd._read_from_nand(lba)  # 실제 NAND 읽기로 후퇴
+    def fast_read(self, lba: int) -> str:
+        for cmd in reversed(self._commands):
+            if isinstance(cmd, WriteCommand) and cmd._address == lba:
+                return cmd._value
+            if isinstance(cmd, EraseCommand):
+                if cmd._address <= lba < cmd._address + cmd._size:
+                    return BLANK_STRING
+        return self._ssd._read_from_nand(lba)
 
 
 def main():
@@ -377,10 +387,13 @@ def main():
     ssd = SSD()
     invoker = CommandInvoker(ssd)
 
+    # if cmd == "R":
+    #     # invoker.add_command(ReadCommand(ssd, int(arg1)))
+    #     invoker.flush()
+    #     ReadCommand(ssd, int(arg1)).execute()
     if cmd == "R":
-        # invoker.add_command(ReadCommand(ssd, int(arg1)))
-        invoker.flush()
-        ReadCommand(ssd, int(arg1)).execute()
+        val = invoker.fast_read(int(arg1))
+        ssd._output_file_handler.write(val)
     elif cmd == "W":
         invoker.add_command(WriteCommand(ssd, int(arg1), arg2, invoker.num_commands() + 1))
     elif cmd == "E":
