@@ -2,6 +2,8 @@ import glob
 import os
 import sys
 from pathlib import Path
+import re
+
 from abc import ABC, abstractmethod
 from file_handler import SimpleFileHandler, MultilineFileWriter
 
@@ -137,6 +139,27 @@ class SSD:
             lines[i] = BLANK_STRING
         self._target_file_handler.write_lines(lines)
 
+    def _read_from_nand(self, lba: int) -> str:
+        if not os.path.exists(TARGET_FILE):
+            self._initialize_nand()
+
+        with open(TARGET_FILE, 'r') as f:
+            lines = f.readlines()
+
+        if len(lines) < SSD_SIZE:
+            lines += [BLANK_STRING + '\n'] * (SSD_SIZE - len(lines))
+
+        if 0 <= lba < SSD_SIZE:
+            value = lines[lba].strip()
+            if re.match(r'^0x[0-9A-F]{8}$', value):
+                return value
+        return BLANK_STRING
+
+    def _initialize_nand(self):
+        with open(TARGET_FILE, 'w') as f:
+            for _ in range(SSD_SIZE):
+                f.write(BLANK_STRING + '\n')
+
 
 class Command(ABC):
     @abstractmethod
@@ -192,6 +215,7 @@ class EraseCommand(Command):
 class CommandInvoker:
     def __init__(self, ssd: SSD):
         self._commands = []
+        self._ssd = ssd
 
         if not os.path.isdir(BUFFER_DIR):
             self.init_command_buffer()
@@ -397,6 +421,30 @@ class CommandInvoker:
 
 
 
+    # def fast_read(self, lba: int) -> str:
+    #     # 최근 명령어 우선으로 역순 스캔
+    #     for cmd in reversed(self._commands):
+    #         if cmd['type'] == 'W':
+    #             if cmd['lba'] == lba:
+    #                 return cmd['value']  # 최신 쓰기 값
+    #         elif cmd['type'] == 'E':
+    #             start = cmd['start_lba']
+    #             end = start + cmd['size']
+    #             if start <= lba < end:
+    #                 return BLANK_STRING  # 삭제됨
+    #
+    #     return self._ssd._read_from_nand(lba)  # 실제 NAND 읽기로 후퇴
+
+    def fast_read(self, lba: int) -> str:
+        for cmd in reversed(self._commands):
+            if isinstance(cmd, WriteCommand) and cmd._address == lba:
+                return cmd._value
+            if isinstance(cmd, EraseCommand):
+                if cmd._address <= lba < cmd._address + cmd._size:
+                    return BLANK_STRING
+        return self._ssd._read_from_nand(lba)
+
+
 def main():
     if len(sys.argv) < 1:
         print("Usage: ssd.py <command> <arg1> [arg2]")
@@ -409,10 +457,13 @@ def main():
     ssd = SSD()
     invoker = CommandInvoker(ssd)
 
+    # if cmd == "R":
+    #     # invoker.add_command(ReadCommand(ssd, int(arg1)))
+    #     invoker.flush()
+    #     ReadCommand(ssd, int(arg1)).execute()
     if cmd == "R":
-        # invoker.add_command(ReadCommand(ssd, int(arg1)))
-        invoker.flush()
-        ReadCommand(ssd, int(arg1)).execute()
+        val = invoker.fast_read(int(arg1))
+        ssd._output_file_handler.write(val)
     elif cmd == "W":
         invoker.add_command(WriteCommand(ssd, int(arg1), arg2, invoker.num_commands() + 1))
     elif cmd == "E":
