@@ -1,7 +1,9 @@
 import sys
 
 import pytest
-from logger import Logger, StreamHandler, FileHandler
+from pytest_mock import MockerFixture
+
+from logger import Logger, StreamHandler, FileHandler, Formatter
 
 CLASS_METHOD_NAME = "class.method()"
 MESSAGE = "Hi"
@@ -20,7 +22,6 @@ def test_logger_print_success(logger, capsys):
     logger.print(CLASS_METHOD_NAME, MESSAGE)
 
     captured = capsys.readouterr()
-    print(f"captured.out: {captured.out}")
 
     assert f"{CLASS_METHOD_NAME}: {MESSAGE}" in captured.out
 
@@ -30,7 +31,6 @@ def test_logger_info_success(logger, capsys):
     logger.info(CLASS_METHOD_NAME, MESSAGE)
 
     captured = capsys.readouterr()
-    print(f"captured.out: {captured.out}")
 
     assert f"INFO {CLASS_METHOD_NAME}: {MESSAGE}" in captured.out
 
@@ -40,7 +40,6 @@ def test_logger_warn_success(logger, capsys):
     logger.warn(CLASS_METHOD_NAME, MESSAGE)
 
     captured = capsys.readouterr()
-    print(f"captured.out: {captured.out}")
 
     assert f"WARN {CLASS_METHOD_NAME}: {MESSAGE}" in captured.out
 
@@ -50,7 +49,6 @@ def test_logger_error_success(logger, capsys):
     logger.error(CLASS_METHOD_NAME, MESSAGE)
 
     captured = capsys.readouterr()
-    print(f"captured.out: {captured.out}")
 
     assert f"ERROR {CLASS_METHOD_NAME}: {MESSAGE}" in captured.out
 
@@ -60,10 +58,24 @@ def test_logger_debug_success(logger, capsys):
     logger.debug(CLASS_METHOD_NAME, MESSAGE)
 
     captured = capsys.readouterr()
-    print(f"captured.out: {captured.out}")
 
     assert f"DEBUG {CLASS_METHOD_NAME}: {MESSAGE}" in captured.out
 
+
+def test_logger_set_formatter(logger, mocker: MockerFixture, capsys):
+    custom_log_format = "{time} {level} {class_method_name}--- {message}"
+    formatter = Formatter(fmt=custom_log_format)
+    logger.add_handler(StreamHandler(sys.stdout))
+    logger.set_formatter(formatter)
+
+    logger.print(CLASS_METHOD_NAME, MESSAGE)
+    captured = capsys.readouterr()
+
+    assert f"{CLASS_METHOD_NAME}--- {MESSAGE}" in captured.out
+
+    # 후처리(Formatter 복구)
+    formatter = Formatter()
+    logger.set_formatter(formatter)
 
 def test_file_handler_writes_to_file(tmp_path, logger):
     log_path = tmp_path / "latest.log"
