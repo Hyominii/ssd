@@ -170,9 +170,6 @@ class WriteCommand(Command):
         self._value = value
         self.rename_buffer(buffer_num, 'W', address, value)
 
-    def rename_buffer(self, buffer_num, cmd_type, address, value=None):  # 임시 구현 (실제 버퍼 로직 필요 시 확장)
-        pass  # 버퍼 파일 rename 로직 미구현; 필요 시 추가
-
     def execute(self):
         self.ssd.write(self._address, self._value)
 
@@ -183,9 +180,6 @@ class EraseCommand(Command):
         self._address = address
         self._size = size  # 오타 수정
         self.rename_buffer(buffer_num, 'E', address, size)
-
-    def rename_buffer(self, buffer_num, cmd_type, address, size=None):  # 임시 구현
-        pass  # 버퍼 파일 rename 로직 미구현; 필요 시 추가
 
     def execute(self):
         self.ssd.erase(self._address, self._size)  # 인자 전달 추가
