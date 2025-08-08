@@ -76,7 +76,7 @@ class CommandInvoker:
                 filename.startswith(f"{i}_")
                 for filename in os.listdir(buffer_dir)
             )
-
+"""
             if not exists:
                 file_path = os.path.join(buffer_dir, f"{i}_empty")
                 with open(file_path, "w") as f:
