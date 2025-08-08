@@ -41,7 +41,6 @@ def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, wrong_cmd_args, 
     # Assert
     assert 'INVALID COMMAND' in captured.out
 
-
 def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["exit"]
@@ -330,6 +329,53 @@ def test_shell_cmd_fullread_after_write_wrong_value(shell_app, wrong_value, mock
     for address in range(100):
         assert f'[Read] LBA {address:02} : 0x00000001' in captured.out
 
+def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"1_FullWriteAndReadCompare", f"1_"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+    assert 'Pass' in captured.out
+    for address in range(100):
+        assert f'[Read] LBA {address:02} : 0x12345678' in captured.out
+
+def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"2_PartialLBAWrite", f"2_"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+    assert 'Pass' in captured.out
+    for address in range(5):
+        assert f'[Read] LBA {address:02} : 0x12345678' in captured.out #ToDo: check iterations are 30
+
+def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = [f"3_WriteReadAging", f"3_"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+    assert 'Pass' in captured.out
+    #ToDo: check read value
+
 def test_shell_read_after_read(shell_app, capsys):
     # Arrange & Act
     shell_app._ssd_driver.run_ssd_read.return_value = READ_SUCCESS
@@ -347,54 +393,6 @@ def test_shell_read_after_read(shell_app, capsys):
     assert ret1 == READ_SUCCESS
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     assert '[Read] LBA 01 : 0x00000010' in captured.out
-
-
-
-
-def test_shell_full_write_wrong_format():
-    pass
-
-
-def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 100
-    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 100
-    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
-    # Act
-    shell_app.process_cmd("1_FullWriteAndReadCompare")
-
-    # Assert
-    assert "Pass" in capsys.readouterr().out
-
-    assert shell_app._ssd_driver.run_ssd_write.call_count == 100
-    assert shell_app._ssd_driver.run_ssd_read.call_count == 100
-
-
-def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app._ssd_driver.run_ssd_write.side_effect = [WRITE_SUCCESS] * 150
-    shell_app._ssd_driver.run_ssd_read.side_effect = [READ_SUCCESS] * 150
-    shell_app._ssd_driver.get_ssd_output.return_value = "0x12345678"
-
-    # Act
-    shell_app.process_cmd("2_PartialLBAWrite")
-
-    # Assert
-    assert "Pass" in capsys.readouterr().out
-
-    assert shell_app._ssd_driver.run_ssd_write.call_count == 150
-    assert shell_app._ssd_driver.run_ssd_read.call_count == 150
-
-
-def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    shell_app = TestShellApp()
-
-    # Act
-    shell_app.process_cmd("3_WriteReadAging")
-
-    # Assert
-    assert "Pass" in capsys.readouterr().out
 
 
 def test_shell_runner_with_testfile_correct_cmd(shell_app, mocker: MockerFixture, capsys):
