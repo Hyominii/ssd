@@ -179,21 +179,7 @@ class TestShellApp:
         raise SystemExit(0)
 
     def help(self):
-        print("팀명: BestReviewer")
-        print("팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈")
-        print("사용 가능한 명령어:")
-        print("  write <LBA> <Value>                : 특정 LBA에 값 저장")
-        print("  read <LBA>                         : 특정 LBA 값 읽기")
-        print("  erase <Start_LBA> <Size>           : Start_LBA부터 Size만큼 값 초기화")
-        print("  erase_range <Start_LBA> <End_LBA>  : Start_LBA부터 End_LBA까지 값 초기화 ")
-        print("  fullwrite <Value>                  : 전체 LBA에 동일 값 저장")
-        print("  fullread                           : 전체 LBA 읽기 및 출력")
-        print("  1_FullWriteAndReadCompare          : 전체 LBA 쓰기 및 비교")
-        print("  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회")
-        print("  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회")
-        print("  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함")
-        print("  help                               : 도움말 출력")
-        print("  exit                               : 종료")
+        print("\n".join(checker.COMMAND_DESCRIPTION))
         return SUCCESS
 
     def run(self):

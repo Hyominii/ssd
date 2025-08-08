@@ -237,7 +237,7 @@ def test_shell_exit(shell_app, mocker: MockerFixture):
     exit_mock.assert_called_once()
     assert e.value.code == 0
 
-@pytest.mark.skip
+
 def test_shell_help(capsys):
     test_shell_app = TestShellApp()
     test_shell_app.help()
@@ -248,16 +248,20 @@ def test_shell_help(capsys):
     expected_lines = [
         "팀명: BestReviewer",
         "팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈",
+        "",
         "사용 가능한 명령어:",
-        "  write <LBA> <Value>       : 특정 LBA에 값 저장",
-        "  read <LBA>                : 특정 LBA 값 읽기",
-        "  fullwrite <Value>         : 전체 LBA에 동일 값 저장",
-        "  fullread                  : 전체 LBA 읽기 및 출력",
-        "  1_FullWriteAndReadCompare : 전체 LBA 쓰기 및 비교",
-        "  2_PartialLBAWrite         : LBA 0 ~ 4 쓰기 및 읽기 30회",
-        "  3_WriteReadAging          : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
-        "  help                      : 도움말 출력",
-        "  exit                      : 종료"
+        "  write <LBA> <Value>                : 특정 LBA에 값 저장",
+        "  read <LBA>                         : 특정 LBA 값 읽기",
+        "  erase <Start_LBA> <Size>           : Start_LBA부터 Size만큼 값 초기화",
+        "  erase_range <Start_LBA> <End_LBA>  : Start_LBA부터 End_LBA까지 값 초기화 ",
+        "  fullwrite <Value>                  : 전체 LBA에 동일 값 저장",
+        "  fullread                           : 전체 LBA 읽기 및 출력",
+        "  1_FullWriteAndReadCompare          : 전체 LBA 쓰기 및 비교",
+        "  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회",
+        "  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
+        "  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함",
+        "  help                               : 도움말 출력",
+        "  exit                               : 종료"
     ]
 
     for line in expected_lines:
