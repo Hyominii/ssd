@@ -266,7 +266,6 @@ class CommandInvoker:
 
         self.ignore_cmd(cmd)  # 신규 커맨드 대비해 지울 수 있는 기존 커맨드 제거
 
-
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
 
@@ -447,9 +446,6 @@ class CommandInvoker:
         # 실제 제거(뒤에서부터)
         for i in sorted(removed, reverse=True):
             self._commands.pop(i)
-
-
-
 
     def fast_read(self, lba: int) -> str:
         # 최근 명령어 우선으로 역순 스캔
