@@ -23,7 +23,31 @@ def test_shell_write(shell_app, mocker: MockerFixture, capsys):
     # Assert
     assert '[Write] Done' in captured.out
 
-@pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " "])
+@pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
+def test_shell_write_test_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
+    # Arrange
+    mocker.patch("builtins.input", side_effect=[f"write {valid_address} 0x00000001"])
+
+    # Act
+    ret = shell_app.run_shell(1)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Write] Done' in captured.out
+
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
+def test_shell_write_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
+    # Arrange
+    mocker.patch("builtins.input", side_effect=[f"write 00 {valid_value} "])
+
+    # Act
+    ret = shell_app.run_shell(1)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert '[Write] Done' in captured.out
+
+@pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
 def test_shell_write_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
     # Arrange
     wrong_address_with_valid_value = f"{wrong_address} 0x12345678"
@@ -49,32 +73,6 @@ def test_shell_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, 
 
     # Assert
     assert 'INVALID COMMAND' in captured.out
-
-
-@pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
-def test_shell_write_test_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
-    # Arrange
-    mocker.patch("builtins.input", side_effect=[f"write {valid_address} 0x00000001"])
-
-    # Act
-    ret = shell_app.run_shell(1)
-    captured = capsys.readouterr()
-
-    # Assert
-    assert '[Write] Done' in captured.out
-
-@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
-def test_shell_write_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
-    # Arrange
-    mocker.patch("builtins.input", side_effect=[f"write 00 {valid_value} "])
-
-    # Act
-    ret = shell_app.run_shell(1)
-    captured = capsys.readouterr()
-
-    # Assert
-    assert '[Write] Done' in captured.out
-
 
 def test_shell_read(shell_app, capsys):
     # Arrange
