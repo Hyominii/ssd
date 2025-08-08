@@ -1,18 +1,21 @@
 import glob
 import os
 import sys
-
+from pathlib import Path
 from abc import ABC, abstractmethod
 from file_handler import SimpleFileHandler, MultilineFileWriter
 
-OUTPUT_FILE = 'ssd_output.txt'
-TARGET_FILE = 'ssd_nand.txt'
+# ssd.py 파일이 있는 디렉토리 내 (프로젝트 루트) 절대 경로
+_PROJECT_ROOT = Path(__file__).resolve().parent
+BUFFER_DIR   = str(_PROJECT_ROOT / "buffer")   # ← 여기만 변경
+OUTPUT_FILE  = str(_PROJECT_ROOT / "ssd_output.txt")
+TARGET_FILE  = str(_PROJECT_ROOT / "ssd_nand.txt")
+
 BLANK_STRING = "0x00000000"
 ERROR_STRING = 'ERROR'
 SSD_SIZE = 100
 MIN_VALUE = 0x00000000
 MAX_VALUE = 0xFFFFFFFF
-BUFFER_DIR = 'buffer'
 MAX_COMMANDS = 5
 
 
