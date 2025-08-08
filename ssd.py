@@ -30,11 +30,6 @@ class SSD:
             self._output_file_handler = SimpleFileHandler(OUTPUT_FILE)
             self.init_target_file()
             self.init_command_buffer()
-        # SSD init시에 nand.txt파일이 올바른 포멧인지 확인합니다
-        if os.path.exists(TARGET_FILE) and not self._target_validation():
-            # 파일이 깨진 경우, 재생성합니다. 복구 기능이 필요하다면 여기서 구현할 수 있습니다
-            os.remove(TARGET_FILE)
-            self.init_target_file()
 
     def init_command_buffer(self):
         buffer_dir = BUFFER_DIR
@@ -54,10 +49,10 @@ class SSD:
                     f.write("")
 
     def init_target_file(self):
-        # 파일이 없으면 새로 생성
-        # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
-        if os.path.exists(TARGET_FILE):
+        # SSD init시에 nand.txt파일이 올바른 포멧인지 확인합니다
+        if os.path.exists(TARGET_FILE) and self._target_validation():
             return
+        # 파일이 없으면 100개의 BLANK VALUE 생성
         self._target_file_handler.write_lines([BLANK_STRING for _ in range(SSD_SIZE)])
         return
 
