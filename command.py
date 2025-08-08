@@ -42,3 +42,6 @@ class CommandInvoker:
 
     def num_commands(self):
         return len(self._commands)
+
+    def get_buffer(self):
+        return self._commands
