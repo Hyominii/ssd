@@ -323,7 +323,6 @@ class CommandInvoker:
                 merged_end_addr   = union_end
                 indices_to_remove.append(idx)
 
-
         # nothing merged → caller should append the incoming command as-is
         if not indices_to_remove:
             return None
