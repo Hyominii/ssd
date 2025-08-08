@@ -4,7 +4,6 @@ import sys
 import pytest
 from pathlib import Path
 from tests.test_read import get_output_file, TEST_VALUE
-from tests.test_ssd_write_ import read_target
 
 
 def test_main_write_called():
