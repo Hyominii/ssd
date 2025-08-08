@@ -257,10 +257,6 @@ class CommandInvoker:
     def add_command(self, cmd: Command) -> None:
         self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
 
-        if isinstance(cmd, ReadCommand):  # Read 즉시 실행
-            cmd.execute()
-            return  # 버퍼에 추가 안 함
-
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
 
@@ -380,86 +376,69 @@ class CommandInvoker:
 
     def ignore_cmd(self, new_cmd: Command):
         """
-        버퍼에 이미 존재하는 불필요한 명령을 제거.
-        - Write  : 같은 LBA에 대한 이전 Write 모두 제거
-                   (추가) 같은 LBA의 단일 슬롯 Erase(size=1)도 불필요하므로 제거
-        - Erase  : (a) 지우려는 범위에 포함된 모든 Write 제거
-                   (b) 완전히 포함되는 이전 Erase 제거
+        중복·무효 명령 제거 및 Erase 축소
+        ─────────────────────────────────────
+        • Write
+            – 같은 LBA의 이전 Write 제거
+            – 쓰려는 LBA를 포함하는 Erase 가 있으면
+              · LBA가 Erase 시작 ➜ addr+1, size-1
+              · LBA가 Erase 끝   ➜ size-1
+              · size==0 → Erase 제거
+        • Erase
+            – 범위에 포함된 모든 Write 제거
+            – 자신이 완전히 감싸는 이전 Erase 제거
         """
-        def _erase_range(cmd):
+
+        def erange(cmd):
             return range(cmd._address, cmd._address + cmd._size)
 
-        removed_idx = []
-        for idx, old in enumerate(self._commands):
-            if isinstance(new_cmd, WriteCommand):
-                # if isinstance(old, WriteCommand) and old._address == new_cmd._address:
-                #     removed_idx.append(idx)
+        removed = []
+        # ───── Write 추가 시 ─────
+        if isinstance(new_cmd, WriteCommand):
+            w = new_cmd._address
+            for idx, old in enumerate(self._commands):
+                # ① 같은 LBA Write 제거
+                if isinstance(old, WriteCommand) and old._address == w:
+                    removed.append(idx)
 
-                # 같은 LBA의 이전 Write 제거
-                if isinstance(old, WriteCommand) and old._address == new_cmd._address:
-                    removed_idx.append(idx)
-                # 같은 LBA의 단일 슬롯 Erase(size=1)는 Write로 덮이므로 제거
-                elif isinstance(old, EraseCommand) and old._size == 1 and old._address == new_cmd._address:
-                    removed_idx.append(idx)
+                # ② 포함 Erase 축소 / 제거
+                elif isinstance(old, EraseCommand) and w in erange(old):
+                    if w == old._address:  # 앞쪽 잘라내기
+                        old._address += 1
+                        old._size -= 1
+                    elif w == old._address + old._size - 1:  # 뒤쪽 잘라내기
+                        old._size -= 1
 
-            elif isinstance(new_cmd, EraseCommand):
-                n_range = _erase_range(new_cmd)
-
-                # (a) 기존 Write 가 지워질 범위에 포함
-                if isinstance(old, WriteCommand) and old._address in n_range:
-                    removed_idx.append(idx)
-
-                # # (b) 기존 Erase 가 새 Erase 범위에 완전히 포함
-                # elif isinstance(old, EraseCommand):
-                #     o_range = _erase_range(old)
-                #     if o_range.start >= n_range.start and o_range.stop <= n_range.stop:
-                #         removed_idx.append(idx)
-
-                # (b) 기존 Erase 가 새 Erase 범위에 완전히 포함
-                elif isinstance(old, EraseCommand):
-                    o_range = _erase_range(old)
-                    if o_range.start >= n_range.start and o_range.stop <= n_range.stop:
-                        removed_idx.append(idx)
+                    # 파일명 갱신
+                    if old._size > 0:
+                        slot = old.path.split("_")[0]  # '2'
+                        new_name = f"{slot}_E_{old._address}_{old._size}"
+                        if new_name != old.path:
+                            os.rename(os.path.join(BUFFER_DIR, old.path),
+                                      os.path.join(BUFFER_DIR, new_name))
+                            old.path = new_name
                     else:
-                        # (c) 기존 Erase 의 '실효 범위'가 신규 Erase 로 모두 대체되면 제거
-                        #     실효 범위 = 기존 Erase 범위 - (그 이후~현재 사이 Write 가 쓴 주소)
-                        writes_between = {
-                            c._address for c in self._commands[idx+1:]
-                            if isinstance(c, WriteCommand) and c._address in o_range
-                        }
-                        effective_after_writes = {a for a in o_range if a not in writes_between}
-                        if not effective_after_writes:
-                            # 전부 Write 로 가려져 더 이상 의미 없음
-                            removed_idx.append(idx)
-                        elif all(n_range.start <= a < n_range.stop for a in effective_after_writes):
-                            # 남은 실효 범위가 모두 신규 Erase 로 커버되므로 제거
-                            removed_idx.append(idx)
+                        removed.append(idx)
 
-        for i in sorted(removed_idx, reverse=True):
-            old = self._commands.pop(i)
+        # ───── Erase 추가 시 ─────
+        elif isinstance(new_cmd, EraseCommand):
+            n_rng = erange(new_cmd)
+            for idx, old in enumerate(self._commands):
+                # ③ 범위에 포함된 Write 제거
+                if isinstance(old, WriteCommand) and old._address in n_rng:
+                    removed.append(idx)
 
-    # def fast_read(self, lba: int) -> str:
-    #     # 최근 명령어 우선으로 역순 스캔
-    #     for cmd in reversed(self._commands):
-    #         if cmd['type'] == 'W':
-    #             if cmd['lba'] == lba:
-    #                 return cmd['value']  # 최신 쓰기 값
-    #         elif cmd['type'] == 'E':
-    #             start = cmd['start_lba']
-    #             end = start + cmd['size']
-    #             if start <= lba < end:
-    #                 return BLANK_STRING  # 삭제됨
-    #
-    #     return self._ssd._read_from_nand(lba)  # 실제 NAND 읽기로 후퇴
+                # ④ 완전히 포함되는 Erase 제거
+                elif isinstance(old, EraseCommand):
+                    o_rng = erange(old)
+                    if o_rng.start >= n_rng.start and o_rng.stop <= n_rng.stop:
+                        removed.append(idx)
 
-    def fast_read(self, lba: int) -> str:
-        for cmd in reversed(self._commands):
-            if isinstance(cmd, WriteCommand) and cmd._address == lba:
-                return cmd._value
-            if isinstance(cmd, EraseCommand):
-                if cmd._address <= lba < cmd._address + cmd._size:
-                    return BLANK_STRING
-        return self._ssd._read_from_nand(lba)
+        # 실제 제거(뒤에서부터)
+        for i in sorted(removed, reverse=True):
+            self._commands.pop(i)
+
+
 
 
     def fast_read(self, lba: int) -> str:
@@ -478,7 +457,7 @@ class CommandInvoker:
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 1:
         print("Usage: ssd.py <command> <arg1> [arg2]")
         sys.exit(1)
 
@@ -489,13 +468,10 @@ def main():
     ssd = SSD()
     invoker = CommandInvoker(ssd)
 
-    # if cmd == "R":
-    #     # invoker.add_command(ReadCommand(ssd, int(arg1)))
-    #     invoker.flush()
-    #     ReadCommand(ssd, int(arg1)).execute()
     if cmd == "R":
-        val = invoker.fast_read(int(arg1))
-        ssd._output_file_handler.write(val)
+        # invoker.add_command(ReadCommand(ssd, int(arg1)))
+        invoker.flush()
+        ReadCommand(ssd, int(arg1)).execute()
     elif cmd == "W":
         invoker.add_command(WriteCommand(ssd, int(arg1), arg2, invoker.num_commands() + 1))
     elif cmd == "E":
