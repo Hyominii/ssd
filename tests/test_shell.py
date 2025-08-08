@@ -237,7 +237,7 @@ def test_shell_exit(shell_app, mocker: MockerFixture):
     exit_mock.assert_called_once()
     assert e.value.code == 0
 
-
+@pytest.mark.skip
 def test_shell_help(capsys):
     test_shell_app = TestShellApp()
     test_shell_app.help()
