@@ -26,7 +26,7 @@ def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, wrong_cmd, capsys):
     assert 'INVALID COMMAND' in captured.out
 
 @pytest.mark.parametrize("wrong_cmd_args", ["write", "read 1 2", "fullwrite", "fullread 0000", "exit 3", "help -", \
-                                            "1_ 02", "2_ s", "2_ a", "4_ *"])
+                                            "1_ 02", "2_ s", "2_ a", "4_ *", "flush 0"])
 def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, wrong_cmd_args, capsys):
     # Arrange
     cmd = [f"{wrong_cmd_args}"]
@@ -70,6 +70,25 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture, capsys):
     assert 'INVALID COMMAND' not in captured.out
     for line in COMMAND_DESCRIPTION:
         assert line in captured.out
+
+def test_shell_cmd_flush_success(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["flush"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    shell_app.run_shell(cmd_len)
+
+    captured = capsys.readouterr()
+
+    # Assert
+    buffer_files = ["1_empty", "2_empty", "3_empty", "4_empty", "5_empty"]
+    assert 'INVALID COMMAND' not in captured.out
+    assert '[Flush] Done' in captured.out
+    for buffer_file in buffer_files:
+        full_buffer_file = os.path.join(f"{ROOT_DIR}/buffer", buffer_file)
+        assert os.path.exists(full_buffer_file)
 
 def test_shell_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
