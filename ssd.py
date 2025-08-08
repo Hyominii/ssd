@@ -15,6 +15,7 @@ MAX_VALUE = 0xFFFFFFFF
 BUFFER_DIR = 'buffer'
 MAX_COMMANDS = 5
 
+
 class SSD:
     _instance = None
 
@@ -49,10 +50,10 @@ class SSD:
                     f.write("")
 
     def init_target_file(self):
-        # 파일이 없으면 새로 생성
-        # 100칸이 있어야 하므로 100개의 BLANK VALUE 생성
-        if os.path.exists(TARGET_FILE):
+        # SSD init시에 nand.txt파일이 올바른 포멧인지 확인합니다
+        if os.path.exists(TARGET_FILE) and self._target_validation():
             return
+        # 파일이 없으면 100개의 BLANK VALUE 생성
         self._target_file_handler.write_lines([BLANK_STRING for _ in range(SSD_SIZE)])
         return
 
@@ -65,6 +66,25 @@ class SSD:
             return 1
         self._output_file_handler.write(read_value)
         return 0
+
+    def _target_validation(self, filename=TARGET_FILE) -> bool:
+        try:
+            with open(filename, 'r') as f:
+                lines = f.readlines()
+
+                # 모든 라인에서 개행 문자를 제거한 후 유효한 라인만 필터링합니다.
+                sanitized_lines = [line.rstrip('\n') for line in lines if line.strip()]
+
+                # 개행 문자를 제거한 라인 수가 SSD_SIZE와 일치하는지 확인합니다.
+                if len(sanitized_lines) != SSD_SIZE:
+                    return False
+
+                for line in sanitized_lines:
+                    if not self._value_validation(line):
+                        return False
+        except IOError:
+            return False
+        return True
 
     def _value_validation(self, read_value):
         if not read_value.startswith(('0x', '0X')) or len(read_value) != 10:
@@ -114,6 +134,7 @@ class SSD:
             lines[i] = BLANK_STRING
         self._target_file_handler.write_lines(lines)
 
+
 class Command(ABC):
     @abstractmethod
     def execute(self):
@@ -133,7 +154,6 @@ class Command(ABC):
                 # print(f"Renamed {filename} -> {}2_string")
                 break  # ✅ 하나만 처리하고 끝냄
 
-
 class ReadCommand(Command):
     def __init__(self, ssd: SSD, address: int):
         self.ssd = ssd
@@ -141,6 +161,7 @@ class ReadCommand(Command):
 
     def execute(self):
         self.ssd.read(self._address)
+
 
 class WriteCommand(Command):
     def __init__(self, ssd: SSD, address: int, value: str, buffer_num: int):
@@ -155,6 +176,7 @@ class WriteCommand(Command):
     def execute(self):
         self.ssd.write(self._address, self._value)
 
+
 class EraseCommand(Command):
     def __init__(self, ssd: SSD, address: int, size: int, buffer_num: int):
         self.ssd = ssd
@@ -167,6 +189,7 @@ class EraseCommand(Command):
 
     def execute(self):
         self.ssd.erase(self._address, self._size)  # 인자 전달 추가
+
 
 class CommandInvoker:
     def __init__(self, ssd: SSD):
@@ -229,7 +252,6 @@ class CommandInvoker:
                 with open(target_path, "w") as f:
                     f.write("")
 
-
 def main():
     if len(sys.argv) < 1:
         print("Usage: ssd.py <command> <arg1> [arg2]")
@@ -258,6 +280,7 @@ def main():
 
     # flush
     # invoker.flush()
+
 
 if __name__ == "__main__":
     main()

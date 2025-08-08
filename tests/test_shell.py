@@ -143,7 +143,7 @@ def test_shell_read_after_read(shell_app, capsys):
 def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
     mock_method = mocker.patch("shell.TestShellApp.exit")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -152,7 +152,7 @@ def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["read 1"])
     mock_method = mocker.patch("shell.TestShellApp.read")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -161,7 +161,7 @@ def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
     mock_method = mocker.patch("shell.TestShellApp.write")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -170,7 +170,7 @@ def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["help"])
     mock_method = mocker.patch("shell.TestShellApp.help")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -179,7 +179,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullread"])
     mock_method = mocker.patch("shell.TestShellApp.full_read")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -188,7 +188,7 @@ def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullwrite 0x00010000"])
     mock_method = mocker.patch("shell.TestShellApp.full_write")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -248,16 +248,20 @@ def test_shell_help(capsys):
     expected_lines = [
         "팀명: BestReviewer",
         "팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈",
+        "",
         "사용 가능한 명령어:",
-        "  write <LBA> <Value>       : 특정 LBA에 값 저장",
-        "  read <LBA>                : 특정 LBA 값 읽기",
-        "  fullwrite <Value>         : 전체 LBA에 동일 값 저장",
-        "  fullread                  : 전체 LBA 읽기 및 출력",
-        "  1_FullWriteAndReadCompare : 전체 LBA 쓰기 및 비교",
-        "  2_PartialLBAWrite         : LBA 0 ~ 4 쓰기 및 읽기 30회",
-        "  3_WriteReadAging          : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
-        "  help                      : 도움말 출력",
-        "  exit                      : 종료"
+        "  write <LBA> <Value>                : 특정 LBA에 값 저장",
+        "  read <LBA>                         : 특정 LBA 값 읽기",
+        "  erase <Start_LBA> <Size>           : Start_LBA부터 Size만큼 값 초기화",
+        "  erase_range <Start_LBA> <End_LBA>  : Start_LBA부터 End_LBA까지 값 초기화 ",
+        "  fullwrite <Value>                  : 전체 LBA에 동일 값 저장",
+        "  fullread                           : 전체 LBA 읽기 및 출력",
+        "  1_FullWriteAndReadCompare          : 전체 LBA 쓰기 및 비교",
+        "  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회",
+        "  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
+        "  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함",
+        "  help                               : 도움말 출력",
+        "  exit                               : 종료"
     ]
 
     for line in expected_lines:
