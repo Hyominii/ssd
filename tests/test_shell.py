@@ -143,7 +143,7 @@ def test_shell_read_after_read(shell_app, capsys):
 def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["exit"])
     mock_method = mocker.patch("shell.TestShellApp.exit")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -152,7 +152,7 @@ def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["read 1"])
     mock_method = mocker.patch("shell.TestShellApp.read")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -161,7 +161,7 @@ def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
     mock_method = mocker.patch("shell.TestShellApp.write")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -170,7 +170,7 @@ def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["help"])
     mock_method = mocker.patch("shell.TestShellApp.help")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -179,7 +179,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullread"])
     mock_method = mocker.patch("shell.TestShellApp.full_read")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
@@ -188,7 +188,7 @@ def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
 def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullwrite 0x00010000"])
     mock_method = mocker.patch("shell.TestShellApp.full_write")
-
+    mock_method.return_value = 0
     shell_app.run_shell(1)
 
     mock_method.assert_called_once()
