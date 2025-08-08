@@ -237,12 +237,12 @@ class TestShellApp:
         return SUCCESS
 
     def erase_write_test(self):
-        self.erase_range("0", "3")
+        self.erase_range("0", "2")
         for x in range(2, 97, 2):
             self.write(str(x), "0x12345678")
             self.write(str(x), "0xaabbccdd")
 
-            self.erase_range(str(x), "3")
+            self.erase(str(x), "3")
 
             for i in range(3):
                 if not self._read_and_compare(str(x + i), "0x00000000"):
@@ -252,9 +252,7 @@ class TestShellApp:
         for iter in range(30):
             ret = self.erase_write_test()
             if ret == ERROR:
-                print("FAIL")
                 return ERROR
-        print("PASS")
         return SUCCESS
 
     def exit(self):
