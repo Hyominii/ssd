@@ -18,6 +18,7 @@ WARN = "WARN"
 ERROR = "ERROR"
 DEBUG = "DEBUG"
 
+
 class Formatter:
     def __init__(self, fmt=None):
         self.fmt = fmt or DEFAULT_LOG_FORMAT
@@ -44,7 +45,8 @@ class StreamHandler(BaseHandler):
 
 
 class FileHandler(BaseHandler):
-    def __init__(self, dirname=DEFAULT_LOG_DIR, filename: str = DEFAULT_LOG_FILE_NAME, max_bytes=DEFAULT_MAX_BYTES, compress=True):
+    def __init__(self, dirname=DEFAULT_LOG_DIR, filename: str = DEFAULT_LOG_FILE_NAME, max_bytes=DEFAULT_MAX_BYTES,
+                 compress=True):
         self.dirname = dirname
         self.filename = filename
         self.log_path = f"{dirname}/{filename}"
@@ -80,10 +82,13 @@ class FileHandler(BaseHandler):
 
             os.remove(log_file)
 
-    def emit(self, formatted_message):
+    def _should_rotate(self):
         self.file.flush()
         self.file.seek(0, os.SEEK_END)
-        if self.file.tell() >= self.max_bytes:
+        return self.file.tell() >= self.max_bytes
+
+    def emit(self, formatted_message):
+        if self._should_rotate():
             self._rotate()
         self.file.write(formatted_message + "\n")
         self.file.flush()
