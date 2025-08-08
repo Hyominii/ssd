@@ -14,6 +14,7 @@ MIN_VALUE = 0x00000000
 MAX_VALUE = 0xFFFFFFFF
 BUFFER_DIR = 'buffer'
 
+
 class SSD:
     _instance = None
 
@@ -29,6 +30,11 @@ class SSD:
             self._output_file_handler = SimpleFileHandler(OUTPUT_FILE)
             self.init_target_file()
             self.init_command_buffer()
+        # SSD init시에 nand.txt파일이 올바른 포멧인지 확인합니다
+        if os.path.exists(TARGET_FILE) and not self._target_validation():
+            # 파일이 깨진 경우, 재생성합니다. 복구 기능이 필요하다면 여기서 구현할 수 있습니다
+            os.remove(TARGET_FILE)
+            self.init_target_file()
 
     def init_command_buffer(self):
         buffer_dir = BUFFER_DIR
@@ -64,6 +70,25 @@ class SSD:
             return 1
         self._output_file_handler.write(read_value)
         return 0
+
+    def _target_validation(self, filename=TARGET_FILE) -> bool:
+        try:
+            with open(filename, 'r') as f:
+                lines = f.readlines()
+
+                # 모든 라인에서 개행 문자를 제거한 후 유효한 라인만 필터링합니다.
+                sanitized_lines = [line.rstrip('\n') for line in lines if line.strip()]
+
+                # 개행 문자를 제거한 라인 수가 SSD_SIZE와 일치하는지 확인합니다.
+                if len(sanitized_lines) != SSD_SIZE:
+                    return False
+
+                for line in sanitized_lines:
+                    if not self._value_validation(line):
+                        return False
+        except IOError:
+            return False
+        return True
 
     def _value_validation(self, read_value):
         if not read_value.startswith(('0x', '0X')) or len(read_value) != 10:
@@ -113,6 +138,7 @@ class SSD:
             lines[i] = BLANK_STRING
         self._target_file_handler.write_lines(lines)
 
+
 class ReadCommand(Command):
     def __init__(self, ssd: SSD, address: int):
         self.ssd = ssd
@@ -120,6 +146,7 @@ class ReadCommand(Command):
 
     def execute(self):
         self.ssd.read(self._address)
+
 
 class WriteCommand(Command):
     def __init__(self, ssd: SSD, address: int, value: str, buffer_num: int):
@@ -134,6 +161,7 @@ class WriteCommand(Command):
     def execute(self):
         self.ssd.write(self._address, self._value)
 
+
 class EraseCommand(Command):
     def __init__(self, ssd: SSD, address: int, size: int, buffer_num: int):
         self.ssd = ssd
@@ -146,6 +174,7 @@ class EraseCommand(Command):
 
     def execute(self):
         self.ssd.erase(self._address, self._size)  # 인자 전달 추가
+
 
 def main():
     if len(sys.argv) < 3:
@@ -173,6 +202,7 @@ def main():
 
     # flush
     invoker.flush()
+
 
 if __name__ == "__main__":
     main()
