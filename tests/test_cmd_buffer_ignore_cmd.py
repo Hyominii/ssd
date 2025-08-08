@@ -119,3 +119,35 @@ def test_05_ignore_erase_supersedes(ctx):
         "4_empty",
         "5_empty",
     }
+
+
+def test_06_merge_erase(ctx):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # E 1 4  →  W 0 …  →  E 0 5 (상위범위)
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 1, 4, invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.WriteCommand(ssd_inst, 0, "0x12341234", invoker.num_commands() + 1)
+    )
+    invoker.add_command(
+        ssd.EraseCommand(ssd_inst, 0, 5, invoker.num_commands() + 1)
+    )
+
+    # 버퍼에는 최종 Erase 하나만 남아야 함
+    assert invoker.num_commands() == 1
+    cmd = invoker.get_buffer()[0]
+    assert isinstance(cmd, ssd.EraseCommand)
+    assert cmd._address == 0 and cmd._size == 5
+
+    # 파일도 1_E_0_5 하나 + 2~5_empty 네 개
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == {
+        "1_E_0_5",
+        "2_empty",
+        "3_empty",
+        "4_empty",
+        "5_empty",
+    }

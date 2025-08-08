@@ -230,22 +230,17 @@ class CommandInvoker:
                 cmd.rename_buffer(idx, 'E', cmd._address, cmd._size)
 
     def add_command(self, cmd: Command) -> None:
-        self.ignore_cmd(cmd)
+        self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
 
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
 
-        self._commands.append(cmd)
-        self._reindex_buffer_files()
-
         if isinstance(cmd, EraseCommand):
             merged = self._merge_erase_if_possible(cmd)
-            if merged:
-                self._commands.extend(merged)
-            else:
-                self._commands.append(cmd)
-        else:
-            self._commands.append(cmd)
+            if merged: self._commands.extend(merged)
+            else : self._commands.append(cmd)
+        else : self._commands.append(cmd)
+
         self._sync_buffer_files()
 
     def _merge_erase_if_possible(self, incoming_cmd: EraseCommand) -> list[EraseCommand] | None:
@@ -342,7 +337,6 @@ class CommandInvoker:
         - Erase  : (a) 지우려는 범위에 포함된 모든 Write 제거
                    (b) 완전히 포함되는 이전 Erase 제거
         """
-
         def _erase_range(cmd):
             return range(cmd._address, cmd._address + cmd._size)
 
@@ -367,42 +361,6 @@ class CommandInvoker:
 
         for i in sorted(removed_idx, reverse=True):
             old = self._commands.pop(i)
-            if not hasattr(old, "path"):
-                continue
-
-            old_fname = old.path  # e.g. "2_W_20_0x..."
-            slot_num = old_fname.split("_")[0]  # 2
-            empty_fname = f"{slot_num}_empty"
-            old_path = os.path.join(BUFFER_DIR, old_fname)
-            new_path = os.path.join(BUFFER_DIR, empty_fname)
-
-            # 이미 같은 이름의 empty 파일이 있으면 기존 파일만 삭제
-            if os.path.exists(new_path):
-                os.remove(old_path)
-            else:
-                os.rename(old_path, new_path)
-
-    # 2. buffer 파일 번호 재정렬
-    def _reindex_buffer_files(self):
-        buf_path = lambda name: os.path.join(BUFFER_DIR, name)
-
-        # 1) 기존 *_empty 전부 삭제
-        for fname in os.listdir(BUFFER_DIR):
-            if fname.endswith("_empty"):
-                os.remove(buf_path(fname))
-
-        # 2) 커맨드 파일 재번호
-        for idx, cmd in enumerate(self._commands, start=1):
-            if not hasattr(cmd, "path"):
-                continue
-            new_name = f"{idx}_" + "_".join(cmd.path.split("_")[1:])
-            if new_name != cmd.path:
-                os.rename(buf_path(cmd.path), buf_path(new_name))
-                cmd.path = new_name
-
-        # 3) 남는 슬롯(5개 유지) empty로 채우기
-        for idx in range(len(self._commands) + 1, 6):
-            open(buf_path(f"{idx}_empty"), "w").close()
 
 
 def main():
