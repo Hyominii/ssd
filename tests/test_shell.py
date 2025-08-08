@@ -2,6 +2,7 @@ import tempfile
 import pytest
 from pytest_mock import MockerFixture
 from shell import *
+from shell_cmd_checker import COMMAND_DESCRIPTION
 
 @pytest.fixture
 def shell_app(mocker):
@@ -67,25 +68,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture, capsys):
 
     # Assert
     assert 'INVALID COMMAND' not in captured.out
-    expected_lines = [
-        "팀명: BestReviewer",
-        "팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈",
-        "",
-        "사용 가능한 명령어:",
-        "  write <LBA> <Value>                : 특정 LBA에 값 저장",
-        "  read <LBA>                         : 특정 LBA 값 읽기",
-        "  erase <Start_LBA> <Size>           : Start_LBA부터 Size만큼 값 초기화",
-        "  erase_range <Start_LBA> <End_LBA>  : Start_LBA부터 End_LBA까지 값 초기화 ",
-        "  fullwrite <Value>                  : 전체 LBA에 동일 값 저장",
-        "  fullread                           : 전체 LBA 읽기 및 출력",
-        "  1_FullWriteAndReadCompare          : 전체 LBA 쓰기 및 비교",
-        "  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회",
-        "  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
-        "  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함",
-        "  help                               : 도움말 출력",
-        "  exit                               : 종료"
-    ]
-    for line in expected_lines:
+    for line in COMMAND_DESCRIPTION:
         assert line in captured.out
 
 def test_shell_write(shell_app, mocker: MockerFixture, capsys):
