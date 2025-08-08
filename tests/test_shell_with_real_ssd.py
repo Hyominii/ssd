@@ -12,6 +12,85 @@ def shell_app(mocker):
 
     return test_shell_app
 
+@pytest.mark.parametrize("wrong_cmd", ["exi", "rea", "wri", "hel", " ", "0_", "*"])
+def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, wrong_cmd, capsys):
+    # Arrange
+    cmd = [f"{wrong_cmd}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' in captured.out
+
+@pytest.mark.parametrize("wrong_cmd_args", ["write", "read 1 2", "fullwrite", "fullread 0000", "exit 3", "help -", \
+                                            "1_ 02", "2_ s", "2_ a", "4_ *"])
+def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, wrong_cmd_args, capsys):
+    # Arrange
+    cmd = [f"{wrong_cmd_args}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' in captured.out
+
+
+def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["exit"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    with pytest.raises(SystemExit) as e:
+        shell_app.run_shell(cmd_len)
+
+    captured = capsys.readouterr()
+
+    # Assert
+    assert e.value.code == 0
+    assert 'INVALID COMMAND' not in captured.out
+
+def test_shell_cmd_help_success(shell_app, mocker: MockerFixture, capsys):
+    # Arrange
+    cmd = ["help"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+
+    # Act
+    shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+
+    # Assert
+    assert 'INVALID COMMAND' not in captured.out
+    expected_lines = [
+        "팀명: BestReviewer",
+        "팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈",
+        "",
+        "사용 가능한 명령어:",
+        "  write <LBA> <Value>                : 특정 LBA에 값 저장",
+        "  read <LBA>                         : 특정 LBA 값 읽기",
+        "  erase <Start_LBA> <Size>           : Start_LBA부터 Size만큼 값 초기화",
+        "  erase_range <Start_LBA> <End_LBA>  : Start_LBA부터 End_LBA까지 값 초기화 ",
+        "  fullwrite <Value>                  : 전체 LBA에 동일 값 저장",
+        "  fullread                           : 전체 LBA 읽기 및 출력",
+        "  1_FullWriteAndReadCompare          : 전체 LBA 쓰기 및 비교",
+        "  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회",
+        "  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
+        "  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함",
+        "  help                               : 도움말 출력",
+        "  exit                               : 종료"
+    ]
+    for line in expected_lines:
+        assert line in captured.out
+
 def test_shell_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["write 0 0x00000001"]
@@ -182,43 +261,6 @@ def test_shell_read_after_read(shell_app, capsys):
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     assert '[Read] LBA 01 : 0x00000010' in captured.out
 
-
-def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture):
-    mocker.patch("builtins.input", side_effect=["exit"])
-    mock_method = mocker.patch("shell.TestShellApp.exit")
-    mock_method.return_value = 0
-    shell_app.run_shell(1)
-
-    mock_method.assert_called_once()
-
-
-def test_shell_cmd_read_success(shell_app, mocker: MockerFixture):
-    mocker.patch("builtins.input", side_effect=["read 1"])
-    mock_method = mocker.patch("shell.TestShellApp.read")
-    mock_method.return_value = 0
-    shell_app.run_shell(1)
-
-    mock_method.assert_called_once()
-
-
-def test_shell_cmd_write_success(shell_app, mocker: MockerFixture):
-    mocker.patch("builtins.input", side_effect=["write 0 0x00000001"])
-    mock_method = mocker.patch("shell.TestShellApp.write")
-    mock_method.return_value = 0
-    shell_app.run_shell(1)
-
-    mock_method.assert_called_once()
-
-
-def test_shell_cmd_help_success(shell_app, mocker: MockerFixture):
-    mocker.patch("builtins.input", side_effect=["help"])
-    mock_method = mocker.patch("shell.TestShellApp.help")
-    mock_method.return_value = 0
-    shell_app.run_shell(1)
-
-    mock_method.assert_called_once()
-
-
 def test_shell_cmd_fullread_success(shell_app, mocker: MockerFixture):
     mocker.patch("builtins.input", side_effect=["fullread"])
     mock_method = mocker.patch("shell.TestShellApp.full_read")
@@ -237,78 +279,6 @@ def test_shell_cmd_fullwrite_success(shell_app, mocker: MockerFixture):
     mock_method.assert_called_once()
 
 
-@pytest.mark.parametrize("input", ["exi", "rea", "wri", "hel"])
-def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, input, capsys):
-    mocker.patch("builtins.input", side_effect=[input])
-
-    shell_app.run_shell(1)
-    captured = capsys.readouterr()
-
-    assert 'INVALID COMMAND' in captured.out
-
-
-def test_shell_wrong_cmd_empty(shell_app, mocker: MockerFixture, capsys):
-    mocker.patch("builtins.input", side_effect=[""])
-
-    shell_app.run_shell(1)
-    captured = capsys.readouterr()
-
-    assert 'INVALID COMMAND' in captured.out
-
-
-@pytest.mark.parametrize("input", ["read 1 2", "write", "fullwrite", "exit 3"])
-def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, input, capsys):
-    mocker.patch("builtins.input", side_effect=["read 1 2"])
-
-    shell_app.run_shell(1)
-    captured = capsys.readouterr()
-
-    assert 'INVALID COMMAND' in captured.out
-
-
-def test_shell_subprocess_cmd():
-    pass
-
-
-def test_shell_exit(shell_app, mocker: MockerFixture):
-    mocker.patch("builtins.input", side_effect=["exit"])
-    exit_mock = mocker.patch("shell.TestShellApp.exit", side_effect=SystemExit(0))
-
-    with pytest.raises(SystemExit) as e:
-        shell_app.run_shell(1)
-
-    exit_mock.assert_called_once()
-    assert e.value.code == 0
-
-
-def test_shell_help(capsys):
-    test_shell_app = TestShellApp()
-    test_shell_app.help()
-
-    captured = capsys.readouterr()
-    output_lines = captured.out.strip().splitlines()
-
-    expected_lines = [
-        "팀명: BestReviewer",
-        "팀장: 이장희 / 팀원: 김대용, 최도현, 박윤상, 최동희, 안효민, 김동훈",
-        "",
-        "사용 가능한 명령어:",
-        "  write <LBA> <Value>                : 특정 LBA에 값 저장",
-        "  read <LBA>                         : 특정 LBA 값 읽기",
-        "  erase <Start_LBA> <Size>           : Start_LBA부터 Size만큼 값 초기화",
-        "  erase_range <Start_LBA> <End_LBA>  : Start_LBA부터 End_LBA까지 값 초기화 ",
-        "  fullwrite <Value>                  : 전체 LBA에 동일 값 저장",
-        "  fullread                           : 전체 LBA 읽기 및 출력",
-        "  1_FullWriteAndReadCompare          : 전체 LBA 쓰기 및 비교",
-        "  2_PartialLBAWrite                  : LBA 0 ~ 4 쓰기 및 읽기 30회",
-        "  3_WriteReadAging                   : LBA 0, 99 랜덤 값 쓰기 및 읽기 200회",
-        "  4_EraseAndWriteAging               : LBA 짝수번호에 값을 두번 쓰고 및 size 3 만큼 지우기를 30회 반복함",
-        "  help                               : 도움말 출력",
-        "  exit                               : 종료"
-    ]
-
-    for line in expected_lines:
-        assert line in output_lines
 
 
 def test_shell_full_read(shell_app, mocker: MockerFixture, capsys):
