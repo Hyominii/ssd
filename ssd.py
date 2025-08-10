@@ -284,6 +284,15 @@ class CommandInvoker:
         merged_start_addr = incoming_start_addr
         merged_end_addr = incoming_end_addr
 
+        def _has_write_between(start_idx: int, union_start: int, union_end: int) -> bool:
+            # 기존 Erase(start_idx) 이후 ~ 현재 버퍼 끝까지 사이에,
+            # 합집합 범위[union_start, union_end) 를 쓰는 Write 가 있으면 True
+            for j in range(start_idx + 1, len(self._commands)):
+                mid = self._commands[j]
+                if isinstance(mid, WriteCommand) and union_start <= mid._address < union_end:
+                    return True
+            return False
+
         for idx, queued_cmd in enumerate(self._commands):
             if not isinstance(queued_cmd, EraseCommand):
                 continue
@@ -299,10 +308,21 @@ class CommandInvoker:
                     or (merged_start_addr <= queued_start_addr < merged_end_addr)
             )
 
+            # if has_overlap_or_adjacent:
+            #     merged_start_addr = min(merged_start_addr, queued_start_addr)
+            #     merged_end_addr = max(merged_end_addr, queued_end_addr)
+            #     indices_to_remove.append(idx)
+
             if has_overlap_or_adjacent:
-                merged_start_addr = min(merged_start_addr, queued_start_addr)
-                merged_end_addr = max(merged_end_addr, queued_end_addr)
+                # 중간에 해당 합집합 범위를 건드는 Write 가 있으면 merge 금지
+                union_start = min(merged_start_addr, queued_start_addr)
+                union_end   = max(merged_end_addr, queued_end_addr)
+                if _has_write_between(idx, union_start, union_end):
+                    continue
+                merged_start_addr = union_start
+                merged_end_addr   = union_end
                 indices_to_remove.append(idx)
+
 
         # nothing merged → caller should append the incoming command as-is
         if not indices_to_remove:
@@ -390,11 +410,31 @@ class CommandInvoker:
                 if isinstance(old, WriteCommand) and old._address in n_range:
                     removed_idx.append(idx)
 
+                # # (b) 기존 Erase 가 새 Erase 범위에 완전히 포함
+                # elif isinstance(old, EraseCommand):
+                #     o_range = _erase_range(old)
+                #     if o_range.start >= n_range.start and o_range.stop <= n_range.stop:
+                #         removed_idx.append(idx)
+
                 # (b) 기존 Erase 가 새 Erase 범위에 완전히 포함
                 elif isinstance(old, EraseCommand):
                     o_range = _erase_range(old)
                     if o_range.start >= n_range.start and o_range.stop <= n_range.stop:
                         removed_idx.append(idx)
+                    else:
+                        # (c) 기존 Erase 의 '실효 범위'가 신규 Erase 로 모두 대체되면 제거
+                        #     실효 범위 = 기존 Erase 범위 - (그 이후~현재 사이 Write 가 쓴 주소)
+                        writes_between = {
+                            c._address for c in self._commands[idx+1:]
+                            if isinstance(c, WriteCommand) and c._address in o_range
+                        }
+                        effective_after_writes = {a for a in o_range if a not in writes_between}
+                        if not effective_after_writes:
+                            # 전부 Write 로 가려져 더 이상 의미 없음
+                            removed_idx.append(idx)
+                        elif all(n_range.start <= a < n_range.stop for a in effective_after_writes):
+                            # 남은 실효 범위가 모두 신규 Erase 로 커버되므로 제거
+                            removed_idx.append(idx)
 
         for i in sorted(removed_idx, reverse=True):
             old = self._commands.pop(i)
@@ -424,7 +464,7 @@ class CommandInvoker:
 
 
 def main():
-    if len(sys.argv) < 1:
+    if len(sys.argv) < 2:
         print("Usage: ssd.py <command> <arg1> [arg2]")
         sys.exit(1)
 
