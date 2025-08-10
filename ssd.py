@@ -254,7 +254,15 @@ class CommandInvoker:
                 cmd.rename_buffer(idx, 'E', cmd._address, cmd._size)
 
     def add_command(self, cmd: Command) -> None:
-        self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
+        # self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
+
+        # Read 명령은 버퍼에 쌓지 않고 즉시 수행
+        if isinstance(cmd, ReadCommand):
+            cmd.execute()
+            return
+
+        self.ignore_cmd(cmd)  # 신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
+
 
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
