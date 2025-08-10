@@ -26,7 +26,7 @@ def mock_ssd():
 
 @pytest.fixture(autouse=True)
 def clean_buffer_dir():
-    """각 테스트 전에 BUFFER_DIR 클린업: 이전 상태 제거."""
+    # 각 테스트 전 BUFFER_DIR 클린업
     if os.path.exists(BUFFER_DIR):
         shutil.rmtree(BUFFER_DIR, ignore_errors=True)
     os.makedirs(BUFFER_DIR)
