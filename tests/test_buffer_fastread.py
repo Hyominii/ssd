@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 
 from shell import *
-from ssd import BUFFER_DIR
+from ssd import BUFFER_DIR, OUTPUT_FILE, TARGET_FILE
 
 # buffer 폴더 초기화
 def reset_buffer_dir() -> None:
@@ -14,11 +14,19 @@ def reset_buffer_dir() -> None:
         shutil.rmtree(buf, ignore_errors=True)
     buf.mkdir(parents=True, exist_ok=True)
 
+# 파일 초기화
+def reset_output_and_target() -> None:
+    for f in [OUTPUT_FILE, TARGET_FILE]:
+        if os.path.exists(f):
+            os.remove(f)
+
 @pytest.fixture(scope="module")
-def _buffer_block_module():
+def _reset_output_target_files_buffer_dir():
+    reset_output_and_target()
     reset_buffer_dir()
     yield
     reset_buffer_dir()
+    reset_output_and_target()
 
 @pytest.fixture
 def shell_app(mocker):
@@ -34,7 +42,8 @@ def shell_app(mocker):
         ("read", "00", "",           ["1_W_0_0x00000001"], "[Read] LBA 00 : 0x00000001"),
     ]
 )
-def test_buffer_fastread_1(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_1(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+# def test_buffer_fastread_1(shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -60,7 +69,7 @@ def test_buffer_fastread_1(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000001"),
     ]
 )
-def test_buffer_fastread_2(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_2(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -85,7 +94,7 @@ def test_buffer_fastread_2(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("read", "00", "",           ["1_E_0_1"], "[Read] LBA 00 : 0x00000000"),
     ]
 )
-def test_buffer_fastread_3(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_3(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -111,7 +120,7 @@ def test_buffer_fastread_3(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("read", "00", "",           ["2_empty"], "[Read] LBA 00 : 0x00000000"),
     ]
 )
-def test_buffer_fastread_4(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_4(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -136,7 +145,7 @@ def test_buffer_fastread_4(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("read", "00", "",           ["1_W_0_0x00000001"], "[Read] LBA 00 : 0x00000001"),
     ]
 )
-def test_buffer_fastread_5(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_5(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -162,7 +171,7 @@ def test_buffer_fastread_5(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000001"),
     ]
 )
-def test_buffer_fastread_6(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_6(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -188,7 +197,7 @@ def test_buffer_fastread_6(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         # ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000002"),
     ]
 )
-def test_buffer_fastread_7(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_7(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -214,7 +223,7 @@ def test_buffer_fastread_7(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000002"),
     ]
 )
-def test_buffer_fastread_8(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_8(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -239,10 +248,11 @@ def test_buffer_fastread_8(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("write", "00", "0x00000003", ["1_W_0_0x00000003"], "[Write] Done"),
         ("write", "00", "0x00000004", ["1_W_0_0x00000004"], "[Write] Done"),
         ("write", "00", "0x00000005", ["1_W_0_0x00000005"], "[Write] Done"),
-        ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000005"),
+        ("read", "00", "",           ["1_W_0_0x00000005"], "[Read] LBA 00 : 0x00000005"),
+        # ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000005"),
     ]
 )
-def test_buffer_fastread_9(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_9(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -268,10 +278,11 @@ def test_buffer_fastread_9(_buffer_block_module, shell_app, cmd, arg1, arg2, buf
         ("write", "00", "0x00000004", ["1_W_0_0x00000004"], "[Write] Done"),
         ("flush", "", "", ["1_empty"], "[Flush] Done"),
         ("write", "00", "0x00000005", ["1_W_0_0x00000005"], "[Write] Done"),
-        ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000005"),
+        ("read", "00", "",           ["1_W_0_0x00000005"], "[Read] LBA 00 : 0x00000005"),
+        # ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000005"),
     ]
 )
-def test_buffer_fastread_10(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_10(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -295,12 +306,15 @@ def test_buffer_fastread_10(_buffer_block_module, shell_app, cmd, arg1, arg2, bu
         ("write", "01", "0x00000002", ["2_W_1_0x00000002"], "[Write] Done"),
         ("write", "02", "0x00000003", ["3_W_2_0x00000003"], "[Write] Done"),
         ("erase", "00", "01", ["3_E_0_1"], "[Erase] Done"),
-        ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000000"),
-        ("read", "01", "",           ["1_empty"], "[Read] LBA 01 : 0x00000002"),
-        ("read", "02", "",           ["1_empty"], "[Read] LBA 02 : 0x00000003")
+        # ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000000"),
+        # ("read", "01", "",           ["1_empty"], "[Read] LBA 01 : 0x00000002"),
+        # ("read", "02", "",           ["1_empty"], "[Read] LBA 02 : 0x00000003"),
+        ("read", "00", "",           ["4_empty", "5_empty"], "[Read] LBA 00 : 0x00000000"),
+        ("read", "01", "",           ["4_empty", "5_empty"], "[Read] LBA 01 : 0x00000002"),
+        ("read", "02", "",           ["4_empty", "5_empty"], "[Read] LBA 02 : 0x00000003"),
     ]
 )
-def test_buffer_fastread_11(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_11(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -329,7 +343,7 @@ def test_buffer_fastread_11(_buffer_block_module, shell_app, cmd, arg1, arg2, bu
         ("read", "02", "",           ["1_empty"], "[Read] LBA 02 : 0x00000003")
     ]
 )
-def test_buffer_fastread_12(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_12(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
@@ -357,7 +371,7 @@ def test_buffer_fastread_12(_buffer_block_module, shell_app, cmd, arg1, arg2, bu
         ("read", "10", "",           ["1_empty"], "[Read] LBA 10 : 0x00000001"),
     ]
 )
-def test_buffer_fastread_13(_buffer_block_module, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+def test_buffer_fastread_13(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"{cmd} {arg1} {arg2}"]
     cmd_len = len(cmd)
