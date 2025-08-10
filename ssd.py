@@ -363,6 +363,7 @@ class CommandInvoker:
         """
         버퍼에 이미 존재하는 불필요한 명령을 제거.
         - Write  : 같은 LBA에 대한 이전 Write 모두 제거
+                   (추가) 같은 LBA의 단일 슬롯 Erase(size=1)도 불필요하므로 제거
         - Erase  : (a) 지우려는 범위에 포함된 모든 Write 제거
                    (b) 완전히 포함되는 이전 Erase 제거
         """
@@ -372,7 +373,14 @@ class CommandInvoker:
         removed_idx = []
         for idx, old in enumerate(self._commands):
             if isinstance(new_cmd, WriteCommand):
+                # if isinstance(old, WriteCommand) and old._address == new_cmd._address:
+                #     removed_idx.append(idx)
+
+                # 같은 LBA의 이전 Write 제거
                 if isinstance(old, WriteCommand) and old._address == new_cmd._address:
+                    removed_idx.append(idx)
+                # 같은 LBA의 단일 슬롯 Erase(size=1)는 Write로 덮이므로 제거
+                elif isinstance(old, EraseCommand) and old._size == 1 and old._address == new_cmd._address:
                     removed_idx.append(idx)
 
             elif isinstance(new_cmd, EraseCommand):
@@ -390,7 +398,6 @@ class CommandInvoker:
 
         for i in sorted(removed_idx, reverse=True):
             old = self._commands.pop(i)
-
 
     # def fast_read(self, lba: int) -> str:
     #     # 최근 명령어 우선으로 역순 스캔
