@@ -1,5 +1,8 @@
 import pytest
 from unittest.mock import Mock  # Mock 객체를 만들기 위해 import
+import os
+import shutil
+
 
 # 테스트할 클래스들을 import
 from ssd import (
@@ -7,12 +10,20 @@ from ssd import (
     ReadCommand,
     WriteCommand,
     EraseCommand,
-    SSD
+    SSD,
+    BUFFER_DIR
 )
 
 TEST_VALUE = "0x01234567"
 
 # --- Fixtures: 테스트 환경 준비 ---
+
+@pytest.fixture(autouse=True)  # 모든 테스트에 자동 적용
+def clean_buffer():
+    if os.path.exists(BUFFER_DIR):
+        shutil.rmtree(BUFFER_DIR)
+    os.makedirs(BUFFER_DIR, exist_ok=True)  # 빈 디렉토리 재생성
+    yield  # 테스트 실행
 
 @pytest.fixture
 def mock_ssd():
@@ -70,6 +81,7 @@ def test_add_one_erase_command(mock_ssd):
 
 def test_add_one_read_command(mock_ssd):
     """TC3: ReadCommand를 하나 추가했을 때 버퍼가 올바르게 구성되는가?"""
+    """TC4: ReadCommand는 버퍼에 쌓이지 않고 즉시 실행된다."""
     # ARRANGE
     invoker = CommandInvoker(mock_ssd)
     cmd = ReadCommand(mock_ssd, 5)
@@ -78,9 +90,12 @@ def test_add_one_read_command(mock_ssd):
     invoker.add_command(cmd)
 
     # ASSERT
-    assert invoker.num_commands() == 0
-    buffered_cmd = invoker.get_buffer()[0]
-    assert isinstance(buffered_cmd, ReadCommand)
+    # assert invoker.num_commands() == 0
+    # buffered_cmd = invoker.get_buffer()[0]
+    # assert isinstance(buffered_cmd, ReadCommand)
+    assert invoker.num_commands() == 0              # 버퍼에 쌓이지 않아야 함
+    assert len(invoker.get_buffer()) == 0           # 버퍼가 비어 있어야 함
+    mock_ssd.read.assert_called_once_with(5)        # 즉시 실행되었는지 확인
 
 
 def test_add_multiple_commands(mock_ssd):
