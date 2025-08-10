@@ -6,6 +6,8 @@ from pathlib import Path
 
 from shell import *
 from ssd import BUFFER_DIR, OUTPUT_FILE, TARGET_FILE
+import ssd as ssd_mod
+
 
 # buffer 폴더 초기화
 def reset_buffer_dir() -> None:
@@ -34,6 +36,7 @@ def shell_app(mocker):
     test_shell_app = TestShellApp(ssd_driver)
 
     return test_shell_app
+
 
 @pytest.mark.parametrize(
     "cmd, arg1, arg2, buffer_files, check_print",
