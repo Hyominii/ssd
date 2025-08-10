@@ -13,7 +13,8 @@ tests_list = [
     'test_logger.py',
     'test_buffer.py',
     'test_cmd_buffer_ignore_cmd.py',
-    'test_fast_read.py'
+    'test_fast_read.py',
+    'test_buffer_fastread.py',
 ]
 
 summary_lines = []
