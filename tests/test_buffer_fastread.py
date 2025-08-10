@@ -338,9 +338,12 @@ def test_buffer_fastread_11(_reset_output_target_files_buffer_dir, shell_app, cm
         ("write", "01", "0x00000002", ["2_W_1_0x00000002"], "[Write] Done"),
         ("write", "02", "0x00000003", ["3_W_2_0x00000003"], "[Write] Done"),
         ("erase_range", "0", "1", ["2_E_0_2"], "[Erase_range] Done"),
-        ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000000"),
-        ("read", "01", "",           ["1_empty"], "[Read] LBA 01 : 0x00000000"),
-        ("read", "02", "",           ["1_empty"], "[Read] LBA 02 : 0x00000003")
+        # ("read", "00", "",           ["1_empty"], "[Read] LBA 00 : 0x00000000"),
+        # ("read", "01", "",           ["1_empty"], "[Read] LBA 01 : 0x00000000"),
+        # ("read", "02", "",           ["1_empty"], "[Read] LBA 02 : 0x00000003")
+        ("read", "00", "",           ["3_empty"], "[Read] LBA 00 : 0x00000000"),
+        ("read", "01", "",           ["3_empty"], "[Read] LBA 01 : 0x00000000"),
+        ("read", "02", "",           ["3_empty"], "[Read] LBA 02 : 0x00000003")
     ]
 )
 def test_buffer_fastread_12(_reset_output_target_files_buffer_dir, shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
