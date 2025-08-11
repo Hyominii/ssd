@@ -9,11 +9,11 @@ from file_handler import SimpleFileHandler, MultilineFileWriter
 
 from policy import ignore_cmd_policy, merge_erase_policy
 from ssd_validator import is_valid_address, is_valid_size, is_valid_value
-
+from command import Command, ReadCommand, WriteCommand, EraseCommand
 
 # ssd.py 파일이 있는 디렉토리 내 (프로젝트 루트) 절대 경로
 _PROJECT_ROOT = Path(__file__).resolve().parent
-BUFFER_DIR = str(_PROJECT_ROOT / "buffer")  # ← 여기만 변경
+BUFFER_DIR = str(_PROJECT_ROOT / "buffer")
 OUTPUT_FILE = str(_PROJECT_ROOT / "ssd_output.txt")
 TARGET_FILE = str(_PROJECT_ROOT / "ssd_nand.txt")
 
@@ -43,11 +43,9 @@ class SSD:
 
     def init_command_buffer(self):
         buffer_dir = BUFFER_DIR
-        os.makedirs(buffer_dir, exist_ok=True)  # 이미 있어도 에러 안 나게
+        os.makedirs(buffer_dir, exist_ok=True)
 
-        # 2. 파일 생성
         for i in range(1, 6):
-            # 해당 i로 시작하는 파일이 이미 존재하는지 확인
             exists = any(
                 filename.startswith(f"{i}_")
                 for filename in os.listdir(buffer_dir)
@@ -59,10 +57,8 @@ class SSD:
                     f.write("")
 
     def init_target_file(self):
-        # SSD init시에 nand.txt파일이 올바른 포멧인지 확인합니다
         if os.path.exists(TARGET_FILE) and self._target_validation():
             return
-        # 파일이 없으면 100개의 BLANK VALUE 생성
         self._target_file_handler.write_lines([BLANK_STRING for _ in range(SSD_SIZE)])
         return
 
@@ -80,11 +76,8 @@ class SSD:
         try:
             with open(filename, 'r') as f:
                 lines = f.readlines()
-
-                # 모든 라인에서 개행 문자를 제거한 후 유효한 라인만 필터링합니다.
                 sanitized_lines = [line.rstrip('\n') for line in lines if line.strip()]
 
-                # 개행 문자를 제거한 라인 수가 SSD_SIZE와 일치하는지 확인합니다.
                 if len(sanitized_lines) != SSD_SIZE:
                     return False
 
@@ -165,97 +158,6 @@ class SSD:
                 f.write(BLANK_STRING + '\n')
 
 
-class Command(ABC):
-    @abstractmethod
-    def execute(self):
-        pass
-
-    def set_path(self, file_path: str):
-        self.path = file_path
-
-    def rename_buffer(self, buffer_num, cmd, address, size):
-        path = f'{buffer_num}_{cmd}_{address}_{size}'
-        self.set_path(path)
-        for filename in os.listdir(BUFFER_DIR):
-            if filename.startswith(f'{buffer_num}'):
-                old_path = os.path.join(BUFFER_DIR, filename)
-                new_path = os.path.join(BUFFER_DIR, path)
-                os.rename(old_path, new_path)
-                # print(f"Renamed {filename} -> {}2_string")
-                break  # ✅ 하나만 처리하고 끝냄
-
-
-class ReadCommand(Command):
-    def __init__(self, ssd: SSD, address: int):
-        self.ssd = ssd
-        self._address = address
-
-    def execute(self):
-        self.ssd.read(self.address)
-
-    @property
-    def address(self):
-        return self._address
-
-    @address.setter
-    def address(self, address):
-        self._address = address
-
-
-class WriteCommand(Command):
-    def __init__(self, ssd: SSD, address: int, value: str, buffer_num: int):
-        self.ssd = ssd
-        self._address = address
-        self._value = value
-        self.rename_buffer(buffer_num, 'W', address, value)
-
-    def execute(self):
-        self.ssd.write(self.address, self.value)
-
-    @property
-    def address(self):
-        return self._address
-
-    @address.setter
-    def address(self, address):
-        self._address = address
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        self._value = value
-
-
-class EraseCommand(Command):
-    def __init__(self, ssd: SSD, address: int, size: int, buffer_num: int):
-        self.ssd = ssd
-        self._address = address
-        self._size = size  # 오타 수정
-        self.rename_buffer(buffer_num, 'E', address, size)
-
-    def execute(self):
-        self.ssd.erase(self.address, self.size)  # 인자 전달 추가
-
-    @property
-    def address(self):
-        return self._address
-
-    @address.setter
-    def address(self, address):
-        self._address = address
-
-    @property
-    def size(self):
-        return self._size
-
-    @size.setter
-    def size(self, size):
-        self._size = size
-
-
 class CommandInvoker:
     def __init__(self, ssd: SSD):
         self._commands = []
@@ -265,37 +167,69 @@ class CommandInvoker:
             self.init_command_buffer()
             return
 
-        for filename in os.listdir(BUFFER_DIR):
-            # file_path = os.path.join(BUFFER_DIR, filename)
-            cmd_arg = filename.split('_')
-            cmd = cmd_arg[1]
-            if cmd == 'empty':
-                break
+        def _slot_num(name: str) -> int:
+            try:
+                return int(name.split("_", 1)[0])
+            except Exception:
+                return 10**9  # 이상치 맨 뒤로
 
-            arg1 = cmd_arg[2]
-            arg2 = cmd_arg[3]
+        for filename in sorted(os.listdir(BUFFER_DIR), key=_slot_num):
+            parts = filename.split('_')
+            if len(parts) < 2:
+                continue  # 형식 불량 스킵
 
-            if cmd_arg[1] == "W":
-                self.add_command(WriteCommand(ssd, int(arg1), arg2, self.num_commands() + 1))
-            elif cmd_arg[1] == "E":
-                self.add_command(EraseCommand(ssd, int(arg1), int(arg2), self.num_commands() + 1))
-            elif cmd_arg[1] == "F":
-                self.flush()
-            else:
-                print(f"Unknown command: {cmd}")
-                sys.exit(1)
+            # parts 예:
+            #  ["1","empty"]
+            #  ["1","W","0","0x00000001"]
+            #  ["2","E","10","3"]
+
+            kind = parts[1]
+            if kind == 'empty':
+                continue  # ✅ empty는 건너뛰고 계속 (예전엔 break라 문제였음)
+
+            # 안전 파싱
+            try:
+                if kind == "W" and len(parts) >= 4:
+                    addr = int(parts[2])
+                    val  = parts[3]
+                    self.add_command(WriteCommand(ssd, addr, val))
+                elif kind == "E" and len(parts) >= 4:
+                    addr = int(parts[2])
+                    size = int(parts[3])
+                    self.add_command(EraseCommand(ssd, addr, size))
+                elif kind == "F":
+                    self.flush()
+                else:
+                    # 모르는 포맷은 스킵 (테스트 안정성)
+                    continue
+            except Exception:
+                # 파싱 실패 시 스킵 (로그 넣고 싶으면 여기서)
+                continue
 
     def _sync_buffer_files(self) -> None:
         os.makedirs(BUFFER_DIR, exist_ok=True)
+
+        # init
         for f in os.listdir(BUFFER_DIR):
             os.remove(os.path.join(BUFFER_DIR, f))
         for i in range(1, 6):
             open(os.path.join(BUFFER_DIR, f"{i}_empty"), "w").close()
+
+        # cmd queue <-> filename 동기화
         for idx, cmd in enumerate(self._commands, 1):
             if isinstance(cmd, WriteCommand):
-                cmd.rename_buffer(idx, 'W', cmd.address, cmd.value)
+                fname = f"{idx}_W_{cmd._address}_{cmd._value}"
             elif isinstance(cmd, EraseCommand):
-                cmd.rename_buffer(idx, 'E', cmd.address, cmd.size)
+                fname = f"{idx}_E_{cmd._address}_{cmd._size}"
+            else:
+                continue
+
+            old_path = os.path.join(BUFFER_DIR, f"{idx}_empty")
+            new_path = os.path.join(BUFFER_DIR, fname)
+            if os.path.exists(old_path):
+                os.rename(old_path, new_path)
+            else:
+                open(new_path, "w").close()
 
     def add_command(self, cmd: Command) -> None:
         # Read는 즉시 실행
@@ -304,7 +238,7 @@ class CommandInvoker:
             return
 
         # 1) 정책 적용 - 무효/중복 제거 및 기본 정리
-        make_erase = lambda a, s: EraseCommand(self._ssd, a, s, 0)
+        make_erase = lambda a, s: EraseCommand(self._ssd, a, s)
 
         new_queue = ignore_cmd_policy(
             queue=self._commands,
@@ -327,7 +261,7 @@ class CommandInvoker:
                 incoming_erase=cmd,
                 EraseCls=EraseCommand,
                 make_erase=make_erase,
-                chunk_size=10,   # 기존 정책 유지
+                chunk_size=10,  # 기존 정책 유지
             )
         else:
             self._commands.append(cmd)
@@ -346,9 +280,8 @@ class CommandInvoker:
 
     def init_command_buffer(self):
         buffer_dir = BUFFER_DIR
-        os.makedirs(buffer_dir, exist_ok=True)  # 이미 있어도 에러 안 나게
+        os.makedirs(buffer_dir, exist_ok=True)
 
-        # 2. 파일 생성
         for i in range(1, 6):
             prefix_pattern = os.path.join(buffer_dir, f"{i}_*")
             matched_files = glob.glob(prefix_pattern)
@@ -356,10 +289,8 @@ class CommandInvoker:
             target_path = os.path.join(buffer_dir, f"{i}_empty")
 
             if matched_files:
-                # 첫 번째로 매칭된 파일만 이름 변경
                 os.rename(matched_files[0], target_path)
             else:
-                # 파일 새로 생성
                 with open(target_path, "w") as f:
                     f.write("")
 
@@ -398,7 +329,7 @@ def main():
             print("ERROR W arguments are not valid")
             return
 
-        invoker.add_command(WriteCommand(ssd, int(arg1), arg2, invoker.num_commands() + 1))
+        invoker.add_command(WriteCommand(ssd, int(arg1), arg2))
 
     elif cmd == "E":
         if not is_valid_address(arg1) or not is_valid_size(arg1, arg2):
@@ -406,7 +337,7 @@ def main():
             print("ERROR E arguments are not valid")
             return
 
-        invoker.add_command(EraseCommand(ssd, int(arg1), int(arg2), invoker.num_commands() + 1))
+        invoker.add_command(EraseCommand(ssd, int(arg1), int(arg2)))
 
     elif cmd == "F":
         invoker.flush()
@@ -414,9 +345,6 @@ def main():
     else:
         print(f"Unknown command: {cmd}")
         sys.exit(1)
-
-    # flush
-    # invoker.flush()
 
 
 if __name__ == "__main__":

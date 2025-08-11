@@ -1,8 +1,7 @@
 import os
 import shutil
 import pytest
-import ssd
-from ssd import EraseCommand, WriteCommand
+from ssd import *
 
 
 # ───────────────────────── 세션 단위 초기화 ──────────────────────────
@@ -13,15 +12,15 @@ def ctx():
     SSD Invoker 생성 후 곧바로 flush() -> buffer 슬롯을 1_empty~5_empty 로 맞춤
     세션 동안 같은 객체·상태를 공유
     """
-    if os.path.isdir(ssd.BUFFER_DIR):
-        shutil.rmtree(ssd.BUFFER_DIR)
-    for f in (ssd.TARGET_FILE, ssd.OUTPUT_FILE):
+    if os.path.isdir(BUFFER_DIR):
+        shutil.rmtree(BUFFER_DIR)
+    for f in (TARGET_FILE, OUTPUT_FILE):
         if os.path.exists(f):
             os.remove(f)
 
-    ssd.SSD._instance = None  # 싱글턴
-    ssd_inst = ssd.SSD()
-    invoker = ssd.CommandInvoker(ssd_inst)
+    SSD._instance = None  # 싱글턴
+    ssd_inst = SSD()
+    invoker = CommandInvoker(ssd_inst)
     invoker.flush()  # empty 상태
 
     return ssd_inst, invoker
@@ -33,7 +32,7 @@ def ctx():
 # 1) 버퍼가 제대로 초기화됐는지
 def test_01_buffer_initialized(ctx):
     expected = {f"{i}_empty" for i in range(1, 6)}
-    assert set(os.listdir(ssd.BUFFER_DIR)) == expected
+    assert set(os.listdir(BUFFER_DIR)) == expected
 
 
 # 2) 명령 추가 시 파일명이 변경되는지
@@ -41,13 +40,13 @@ def test_02_buffer_renamed(ctx):
     ssd_inst, invoker = ctx
 
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 10, "0xAAAABBBB", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 10, "0xAAAABBBB")
     )
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 20, 5, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 20, 5)
     )
 
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert "1_W_10_0xAAAABBBB" in files
     assert "2_E_20_5" in files
 
@@ -58,7 +57,7 @@ def test_03_flush_resets_buffer(ctx):
     invoker.flush()
 
     expected = {f"{i}_empty" for i in range(1, 6)}
-    assert set(os.listdir(ssd.BUFFER_DIR)) == expected
+    assert set(os.listdir(BUFFER_DIR)) == expected
 
 
 def test_04_ignore_write_overwrite(ctx):
@@ -67,13 +66,13 @@ def test_04_ignore_write_overwrite(ctx):
 
     # W 20 → W 21 → W 20(덮어쓰기)
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 20, "0xABCDABCD", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 20, "0xABCDABCD")
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 21, "0x12341234", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 21, "0x12341234")
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 20, "0xEEEEFFFF", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 20, "0xEEEEFFFF")
     )
 
     # 버퍼에는 두 개만 남아야 함 (W 21 / W 20-최근)
@@ -82,7 +81,7 @@ def test_04_ignore_write_overwrite(ctx):
     assert buf[0].address == 21 and buf[1].address == 20
 
     # 실제 파일 이름도 1_W_21_… , 2_W_20_… 이어야 함
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert "1_W_21_0x12341234" in files
     assert "2_W_20_0xEEEEFFFF" in files
     # 불필요 파일이 더 있으면 실패
@@ -96,23 +95,23 @@ def test_05_ignore_erase_supersedes(ctx):
 
     # E 18 3  →  W 21 …  →  E 18 5 (상위범위)
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 18, 3, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 18, 3)
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 21, "0x12341234", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 21, "0x12341234")
     )
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 18, 5, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 18, 5)
     )
 
     # 버퍼에는 최종 Erase 하나만 남아야 함
     assert invoker.num_commands() == 1
     cmd = invoker.get_buffer()[0]
-    assert isinstance(cmd, ssd.EraseCommand)
+    assert isinstance(cmd, EraseCommand)
     assert cmd.address == 18 and cmd.size == 5
 
     # 파일도 1_E_18_5 하나 + 2~5_empty 네 개
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == {
         "1_E_18_5",
         "2_empty",
@@ -128,23 +127,23 @@ def test_06_merge_erase(ctx):
 
     # E 1 4  →  W 0 …  →  E 0 5 (상위범위)
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 1, 4, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 1, 4)
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 0, "0x12341234", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 0, "0x12341234")
     )
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 0, 5, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 0, 5)
     )
 
     # 버퍼에는 최종 Erase 하나만 남아야 함
     assert invoker.num_commands() == 1
     cmd = invoker.get_buffer()[0]
-    assert isinstance(cmd, ssd.EraseCommand)
+    assert isinstance(cmd, EraseCommand)
     assert cmd.address == 0 and cmd.size == 5
 
     # 파일도 1_E_0_5 하나 + 2~5_empty 네 개
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == {
         "1_E_0_5",
         "2_empty",
@@ -160,19 +159,19 @@ def test_07_ignore_erase(ctx):
 
     # E 1 4  →  W 0 …  →  E 0 5 (상위범위)
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 0, 1, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 0, 1)
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 0, "0x12341234", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 0, "0x12341234")
     )
 
     # 버퍼에는 최종 Erase 하나만 남아야 함
     assert invoker.num_commands() == 1
     cmd = invoker.get_buffer()[0]
-    assert isinstance(cmd, ssd.WriteCommand)
+    assert isinstance(cmd, WriteCommand)
 
     # 파일도 1_E_0_5 하나 + 2~5_empty 네 개
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == {
         "1_W_0_0x12341234",
         "2_empty",
@@ -187,25 +186,25 @@ def test_my1(ctx):
     invoker.flush()
 
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 20, 5, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 20, 5)
     )
 
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 30, "0xAAAABBBB", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 30, "0xAAAABBBB")
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 30, "0x12345678", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 30, "0x12345678")
     )
 
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 20, 10, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 20, 10)
     )
 
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 25, 10, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 25, 10)
     )
 
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert "1_E_20_10" in files
     assert "2_E_30_5" in files
 
@@ -215,25 +214,25 @@ def test_my2(ctx):
     invoker.flush()
 
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 0, 8, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 0, 8)
     )
 
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 30, "0xAAAABBBB", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 30, "0xAAAABBBB")
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 30, "0x12345678", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 30, "0x12345678")
     )
 
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 7, 8, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 7, 8)
     )
 
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 14, 10, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 14, 10)
     )
 
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert "1_W_30_0x12345678" in files
     assert "2_E_0_10" in files
     assert "3_E_10_10" in files
@@ -249,10 +248,10 @@ def test_my3(ctx):
     )
 
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 30, "0xAAAABBBB", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 30, "0xAAAABBBB")
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 30, "0x12345678", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 30, "0x12345678")
     )
 
     invoker.add_command(
@@ -260,10 +259,10 @@ def test_my3(ctx):
     )
 
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 14, 10, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 14, 10)
     )
 
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert "1_W_30_0x12345678" in files
     assert "2_E_0_10" in files
     assert "3_E_10_10" in files
@@ -275,19 +274,19 @@ def test_my4(ctx):
     invoker.flush()
 
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 0, "0x0000000a", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 0, "0x0000000a")
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 1, "0x0000000b", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 1, "0x0000000b")
     )
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 2, "0x0000000c", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 2, "0x0000000c")
     )
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 0, 3, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 0, 3)
     )
 
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert "1_E_0_3" in files
 
 
@@ -305,7 +304,7 @@ def test_my5(ctx):
         ssd.WriteCommand(ssd_inst, 2, "0x0000000c", invoker.num_commands() + 1)
     )
     invoker.add_command(
-        ssd.EraseCommand(ssd_inst, 0, 3, invoker.num_commands() + 1)
+        EraseCommand(ssd_inst, 0, 3)
     )
 
     files = set(os.listdir(ssd.BUFFER_DIR))
@@ -317,7 +316,7 @@ def test_my6(ctx):
     invoker.flush()
 
     invoker.add_command(
-        ssd.WriteCommand(ssd_inst, 10, "0x0000000a", invoker.num_commands() + 1)
+        WriteCommand(ssd_inst, 10, "0x0000000a")
     )
     invoker.add_command(
         ssd.EraseCommand(ssd_inst, 11, 2, invoker.num_commands() + 1)
@@ -329,8 +328,7 @@ def test_my6(ctx):
         ssd.EraseCommand(ssd_inst, 12, 2, invoker.num_commands() + 1)
     )
 
-    files = set(os.listdir(ssd.BUFFER_DIR))
-    # failed 아래처럼 나옴
+    files = set(os.listdir(BUFFER_DIR))
     assert "1_W_10_0x0000000a" in files
     assert "2_W_11_0x0000000b" in files
     assert "3_E_12_2" in files
@@ -382,16 +380,16 @@ def test_08_pass_ignore_write(ctx, input):
             continue
         _, cmd, addr, value = input["original"][num].split("_")
         if cmd == "W":
-            invoker.add_command(WriteCommand(ssd_inst, addr, value, num))
+            invoker.add_command(WriteCommand(ssd_inst, addr, value))
         elif cmd == "E":
-            invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value), num))
+            invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value)))
 
     # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
     if cmd == "W":
-        invoker.add_command(WriteCommand(ssd_inst, int(addr), value, invoker.num_commands() + 1))
+        invoker.add_command(WriteCommand(ssd_inst, int(addr), value))
     elif cmd == "E":
-        invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value), invoker.num_commands() + 1))
+        invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value)))
 
     expected_num_commands = 0
     for i in input["changed"]:
@@ -399,7 +397,7 @@ def test_08_pass_ignore_write(ctx, input):
             expected_num_commands += 1
 
     assert invoker.num_commands() == expected_num_commands
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == set(input["changed"])
 
 
@@ -448,11 +446,11 @@ def test_09_ignore_write(ctx, input):
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
-        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+        add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
     # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
-    add_command_by_signature(addr, cmd, invoker, invoker.num_commands() + 1, ssd_inst, value)
+    add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
     expected_num_commands = 0
     for i in input["changed"]:
@@ -460,15 +458,15 @@ def test_09_ignore_write(ctx, input):
             expected_num_commands += 1
 
     assert invoker.num_commands() == expected_num_commands
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == set(input["changed"])
 
 
-def add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value):
+def add_command_by_signature(addr, cmd, invoker, ssd_inst, value):
     if cmd == "W":
-        invoker.add_command(WriteCommand(ssd_inst, int(addr), value, num))
+        invoker.add_command(WriteCommand(ssd_inst, int(addr), value))
     elif cmd == "E":
-        invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value), num))
+        invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value)))
 
 
 @pytest.mark.parametrize("input", [
@@ -533,11 +531,11 @@ def test_10_pass_ignore_command_erase(ctx, input):
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
-        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+        add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
     # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
-    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+    add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 
     expected_num_commands = 0
     for i in input["changed"]:
@@ -545,7 +543,7 @@ def test_10_pass_ignore_command_erase(ctx, input):
             expected_num_commands += 1
 
     assert invoker.num_commands() == expected_num_commands
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == set(input["changed"])
 
 
@@ -599,11 +597,11 @@ def test_11_ignore_command_erase(ctx, input):
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
-        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+        add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
     # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
-    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+    add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 
     expected_num_commands = 0
     for i in input["changed"]:
@@ -611,7 +609,7 @@ def test_11_ignore_command_erase(ctx, input):
             expected_num_commands += 1
 
     assert invoker.num_commands() == expected_num_commands
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == set(input["changed"])
 
 
@@ -639,11 +637,11 @@ def test_12_pass_merge_erase(ctx, input):
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
-        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+        add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
     # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
-    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+    add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 
     expected_num_commands = 0
     for i in input["changed"]:
@@ -651,7 +649,7 @@ def test_12_pass_merge_erase(ctx, input):
             expected_num_commands += 1
 
     assert invoker.num_commands() == expected_num_commands
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == set(input["changed"])
 
 
@@ -783,11 +781,11 @@ def test_13_merge_erase(ctx, input):
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
-        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+        add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
     # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
-    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+    add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 
     expected_num_commands = 0
     for i in input["changed"]:
@@ -795,5 +793,5 @@ def test_13_merge_erase(ctx, input):
             expected_num_commands += 1
 
     assert invoker.num_commands() == expected_num_commands
-    files = set(os.listdir(ssd.BUFFER_DIR))
+    files = set(os.listdir(BUFFER_DIR))
     assert files == set(input["changed"])
