@@ -3,10 +3,12 @@
 
 이 프로젝트는 Code Review Agent - SSD 프로젝트를 위한 레포지토리입니다.
 
+
+
 ## 🛠️ 요구사항
 ### 기본 기능
 #### SSD
-- **가상 SSD 구현**: LBA 0~99, 각 LBA는 4 Byte 저장 (총 100칸, 400 Byte).
+- **가상 SSD 구현**
 - **명령어**
   - `W [LBA] [Value]` : 지정 LBA에 값 저장 (0x00000000 ~ 0xFFFFFFFF).
   - `R [LBA]` : 지정 LBA 값 읽기.
@@ -41,8 +43,6 @@
   - `erase_range [Start_LBA] [End_LBA]` (순서 무관)
 
 #### Logger 기능
-- **통일된 로그 포맷**:  
-  `[YY.MM.DD HH:MM] Class.func()      : message`
 - **로그 관리**
   - `latest.log`에 기록, 10KB 초과 시 `until_날짜_시간.log`로 변경.
   - 로그 파일 2개 이상 시 오래된 파일 `.zip` 압축(파일명 변경만).
@@ -59,8 +59,6 @@
   1. **Ignore Command**: 같은 LBA에 중복 명령 제거.
   2. **Merge Erase**: 인접 Erase 범위 병합 (SIZE ≤ 10).
   3. **Fast Read**: Read 시 Buffer 먼저 조회, 최신 값 반환.
-
-
 
 
 
