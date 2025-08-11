@@ -177,3 +177,60 @@ def test_shell_erase_range_invalid_range(shell_app, invalid_range, mocker: Mocke
     # Assert
     assert '[Erase_range] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
+
+def command_buffer_test(arg1, arg2, buffer_files, capsys, check_print, cmd, mocker, shell_app, invalid_command=False):
+    # Arrange
+    cmd = [f"{cmd} {arg1} {arg2}"]
+    cmd_len = len(cmd)
+    mocker.patch("builtins.input", side_effect=cmd)
+    # Act
+    ret = shell_app.run_shell(cmd_len)
+    captured = capsys.readouterr()
+    # Assert
+    assert check_print in captured.out
+    if not invalid_command:
+        assert 'INVALID COMMAND' not in captured.out
+    for buffer_file in buffer_files:
+        full_buffer_file = os.path.join(f"{ROOT_DIR}/buffer", buffer_file)
+        assert os.path.exists(full_buffer_file)
+
+@pytest.mark.parametrize(
+    "cmd, arg1, arg2, buffer_files, check_print",
+    [
+        ("flush", "", "", ["1_empty"], "[Flush] Done"),
+        ("write", "00", "0x00000001", ["1_W_0_0x00000001"], "[Write] Done"),
+        ("write", "01", "0x00000002", ["2_W_1_0x00000002"], "[Write] Done"),
+        ("write", "00", "0x00000003", ["2_W_0_0x00000003"], "[Write] Done"),
+        ("read", "00", "",           ["1_W_1_0x00000002"], "[Read] LBA 00 : 0x00000003"),
+        ("read", "01", "",           ["2_W_0_0x00000003"], "[Read] LBA 01 : 0x00000002"),
+    ]
+)
+def test_buffer_cmd_ignore_1(shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+    command_buffer_test(arg1, arg2, buffer_files, capsys, check_print, cmd, mocker, shell_app)
+
+@pytest.mark.parametrize(
+    "cmd, arg1, arg2, buffer_files, check_print",
+    [
+        ("flush", "", "", ["1_empty"], "[Flush] Done"),
+        ("write", "05", "0x00000001", ["1_W_5_0x00000001"], "[Write] Done"),
+        ("erase", "00", "05", ["2_E_0_5"], "[Erase] Done"),
+        ("erase", "03", "07", ["1_E_0_10"], "[Erase] Done"),
+        ("read", "05", "",           ["1_E_0_10"], "[Read] LBA 05 : 0x00000000"),
+    ]
+)
+def test_buffer_cmd_merge_1(shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+    command_buffer_test(arg1, arg2, buffer_files, capsys, check_print, cmd, mocker, shell_app)
+
+@pytest.mark.parametrize(
+    "cmd, arg1, arg2, buffer_files, check_print",
+    [
+        ("flush", "", "", ["1_empty"], "[Flush] Done"),
+        ("write", "03", "0x00000003", ["1_W_3_0x00000003"], "[Write] Done"),
+        ("erase", "03", "02", ["1_E_3_2"], "[Erase] Done"),
+        ("read", "03", "",           ["1_E_3_2"], "[Read] LBA 03 : 0x00000000"),
+        ("write", "04", "0x00000004", ["2_W_4_0x00000004"], "[Write] Done"),
+        ("read", "04", "",           ["1_E_3_1"], "[Read] LBA 04 : 0x00000004"),
+    ]
+)
+def test_buffer_cmd_fastread_1(shell_app, cmd, arg1, arg2, buffer_files, check_print, mocker: MockerFixture, capsys):
+    command_buffer_test(arg1, arg2, buffer_files, capsys, check_print, cmd, mocker, shell_app)
