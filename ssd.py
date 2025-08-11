@@ -9,9 +9,9 @@ from file_handler import SimpleFileHandler, MultilineFileWriter
 
 # ssd.py 파일이 있는 디렉토리 내 (프로젝트 루트) 절대 경로
 _PROJECT_ROOT = Path(__file__).resolve().parent
-BUFFER_DIR   = str(_PROJECT_ROOT / "buffer")   # ← 여기만 변경
-OUTPUT_FILE  = str(_PROJECT_ROOT / "ssd_output.txt")
-TARGET_FILE  = str(_PROJECT_ROOT / "ssd_nand.txt")
+BUFFER_DIR = str(_PROJECT_ROOT / "buffer")  # ← 여기만 변경
+OUTPUT_FILE = str(_PROJECT_ROOT / "ssd_output.txt")
+TARGET_FILE = str(_PROJECT_ROOT / "ssd_nand.txt")
 
 BLANK_STRING = "0x00000000"
 ERROR_STRING = 'ERROR'
@@ -263,15 +263,17 @@ class CommandInvoker:
 
         self.ignore_cmd(cmd)  # 신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
 
-
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
 
         if isinstance(cmd, EraseCommand):
             merged = self._merge_erase_if_possible(cmd)
-            if merged: self._commands.extend(merged)
-            else : self._commands.append(cmd)
-        else : self._commands.append(cmd)
+            if merged:
+                self._commands.extend(merged)
+            else:
+                self._commands.append(cmd)
+        else:
+            self._commands.append(cmd)
 
         self._sync_buffer_files()
 
@@ -426,9 +428,6 @@ class CommandInvoker:
         for i in sorted(removed, reverse=True):
             self._commands.pop(i)
 
-
-
-
     # def fast_read(self, lba: int) -> str:
     #     # 최근 명령어 우선으로 역순 스캔
     #     for cmd in reversed(self._commands):
@@ -453,6 +452,48 @@ class CommandInvoker:
         return self._ssd._read_from_nand(lba)
 
 
+def is_valid_size(address: str, lba_size: str):
+    try:
+        address = int(address)
+        lba_size = int(lba_size)
+        if address + lba_size <= 100:
+            return True
+        else:
+            return False
+    except ValueError:
+        return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
+
+
+def is_valid_address(address: str):
+    try:
+        address_int = int(address)
+    except ValueError:
+        return False  # 정수형으로 변환할 수 없는 경우 (예: "0.5")
+
+    if 0 <= address_int <= 99:
+        return True
+    else:
+        return False  # 유효한 범위(0~99)를 벗어난 경우
+
+
+def is_valid_value(value: str) -> str | None:
+    if not value.startswith('0x') or not len(value) == 10:  # str 시작이 0x로 시작되어야함
+        return False
+
+    # 값의 범위를 체크함
+    hex_str = value[2:]
+
+    try:
+        int_value = int(hex_str, 16)
+    except ValueError:
+        return False
+
+    if not (0x0 <= int_value <= 0xFFFFFFFF):
+        return False
+
+    return True
+
+
 def main():
     if len(sys.argv) < 1:
         print("Usage: ssd.py <command> <arg1> [arg2]")
@@ -472,12 +513,26 @@ def main():
     if cmd == "R":
         val = invoker.fast_read(int(arg1))
         ssd._output_file_handler.write(val)
+
     elif cmd == "W":
+        if not is_valid_address(arg1) or not is_valid_value(arg2):
+            ssd._output_file_handler.write("ERROR")
+            print("ERROR W arguments are not valid")
+            return
+
         invoker.add_command(WriteCommand(ssd, int(arg1), arg2, invoker.num_commands() + 1))
+
     elif cmd == "E":
+        if not is_valid_address(arg1) or not is_valid_size(arg1, arg2):
+            ssd._output_file_handler.write("ERROR")
+            print("ERROR E arguments are not valid")
+            return
+
         invoker.add_command(EraseCommand(ssd, int(arg1), int(arg2), invoker.num_commands() + 1))
+
     elif cmd == "F":
         invoker.flush()
+
     else:
         print(f"Unknown command: {cmd}")
         sys.exit(1)
