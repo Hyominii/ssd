@@ -61,14 +61,15 @@ def test_add_one_write_command(mock_ssd):
 
     buffered_cmd = invoker.get_buffer()[0]
     assert isinstance(buffered_cmd, WriteCommand)
-    assert buffered_cmd._address == 10
-    assert buffered_cmd._value == TEST_VALUE
+    assert buffered_cmd.address == 10
+    assert buffered_cmd.value == TEST_VALUE
     # assert buffered_cmd.seq == 1
 
 def test_add_one_erase_command(mock_ssd):
     """TC3: ReadCommand를 하나 추가했을 때 버퍼가 올바르게 구성되는가?"""
     # ARRANGE
     invoker = CommandInvoker(mock_ssd)
+    invoker.flush()
     cmd = EraseCommand(mock_ssd, 5, 5, 1)
 
     # ACT
@@ -84,6 +85,7 @@ def test_add_one_read_command(mock_ssd):
     """TC4: ReadCommand는 버퍼에 쌓이지 않고 즉시 실행된다."""
     # ARRANGE
     invoker = CommandInvoker(mock_ssd)
+    invoker.flush()
     cmd = ReadCommand(mock_ssd, 5)
 
     # ACT
@@ -114,8 +116,8 @@ def test_add_multiple_commands(mock_ssd):
     assert isinstance(buffer[1], WriteCommand)
     assert isinstance(buffer[2], EraseCommand)
 
-    assert buffer[1]._address == 1
-    assert buffer[2]._address == 5
+    assert buffer[1].address == 1
+    assert buffer[2].address == 5
 
 
 def test_flush_executes_and_clears_buffer(mocker, mock_ssd):

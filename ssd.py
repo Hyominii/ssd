@@ -187,7 +187,15 @@ class ReadCommand(Command):
         self._address = address
 
     def execute(self):
-        self.ssd.read(self._address)
+        self.ssd.read(self.address)
+
+    @property
+    def address(self):
+        return self._address
+
+    @address.setter
+    def address(self, address):
+        self._address = address
 
 
 class WriteCommand(Command):
@@ -198,7 +206,23 @@ class WriteCommand(Command):
         self.rename_buffer(buffer_num, 'W', address, value)
 
     def execute(self):
-        self.ssd.write(self._address, self._value)
+        self.ssd.write(self.address, self.value)
+
+    @property
+    def address(self):
+        return self._address
+
+    @address.setter
+    def address(self, address):
+        self._address = address
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
 
 
 class EraseCommand(Command):
@@ -209,7 +233,23 @@ class EraseCommand(Command):
         self.rename_buffer(buffer_num, 'E', address, size)
 
     def execute(self):
-        self.ssd.erase(self._address, self._size)  # 인자 전달 추가
+        self.ssd.erase(self.address, self.size)  # 인자 전달 추가
+
+    @property
+    def address(self):
+        return self._address
+
+    @address.setter
+    def address(self, address):
+        self._address = address
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, size):
+        self._size = size
 
 
 class CommandInvoker:
@@ -249,19 +289,12 @@ class CommandInvoker:
             open(os.path.join(BUFFER_DIR, f"{i}_empty"), "w").close()
         for idx, cmd in enumerate(self._commands, 1):
             if isinstance(cmd, WriteCommand):
-                cmd.rename_buffer(idx, 'W', cmd._address, cmd._value)
+                cmd.rename_buffer(idx, 'W', cmd.address, cmd.value)
             elif isinstance(cmd, EraseCommand):
-                cmd.rename_buffer(idx, 'E', cmd._address, cmd._size)
+                cmd.rename_buffer(idx, 'E', cmd.address, cmd.size)
 
     def add_command(self, cmd: Command) -> None:
-        # self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
-
-        # Read 명령은 버퍼에 쌓지 않고 즉시 수행
-        if isinstance(cmd, ReadCommand):
-            cmd.execute()
-            return
-
-        self.ignore_cmd(cmd)  # 신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
+        self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
 
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
@@ -279,8 +312,8 @@ class CommandInvoker:
 
     def _merge_erase_if_possible(self, incoming_cmd: EraseCommand) -> list[EraseCommand] | None:
         # range of the new (incoming) erase request
-        incoming_start_addr = incoming_cmd._address
-        incoming_end_addr = incoming_start_addr + incoming_cmd._size
+        incoming_start_addr = incoming_cmd.address
+        incoming_end_addr = incoming_start_addr + incoming_cmd.size
 
         # track commands that will be removed because they merge with the incoming one
         indices_to_remove: list[int] = []
@@ -293,8 +326,8 @@ class CommandInvoker:
             if not isinstance(queued_cmd, EraseCommand):
                 continue
 
-            queued_start_addr = queued_cmd._address
-            queued_end_addr = queued_start_addr + queued_cmd._size
+            queued_start_addr = queued_cmd.address
+            queued_end_addr = queued_start_addr + queued_cmd.size
 
             # overlap or directly adjacent?
             has_overlap_or_adjacent = (
@@ -380,29 +413,29 @@ class CommandInvoker:
         """
 
         def erange(cmd):
-            return range(cmd._address, cmd._address + cmd._size)
+            return range(cmd.address, cmd.address + cmd.size)
 
         removed = []
         # ───── Write 추가 시 ─────
         if isinstance(new_cmd, WriteCommand):
-            w = new_cmd._address
+            w = new_cmd.address
             for idx, old in enumerate(self._commands):
                 # ① 같은 LBA Write 제거
-                if isinstance(old, WriteCommand) and old._address == w:
+                if isinstance(old, WriteCommand) and old.address == w:
                     removed.append(idx)
 
                 # ② 포함 Erase 축소 / 제거
                 elif isinstance(old, EraseCommand) and w in erange(old):
-                    if w == old._address:  # 앞쪽 잘라내기
-                        old._address += 1
-                        old._size -= 1
-                    elif w == old._address + old._size - 1:  # 뒤쪽 잘라내기
-                        old._size -= 1
+                    if w == old.address:  # 앞쪽 잘라내기
+                        old.address += 1
+                        old.size -= 1
+                    elif w == old.address + old.size - 1:  # 뒤쪽 잘라내기
+                        old.size -= 1
 
                     # 파일명 갱신
-                    if old._size > 0:
+                    if old.size > 0:
                         slot = old.path.split("_")[0]  # '2'
-                        new_name = f"{slot}_E_{old._address}_{old._size}"
+                        new_name = f"{slot}_E_{old.address}_{old.size}"
                         if new_name != old.path:
                             os.rename(os.path.join(BUFFER_DIR, old.path),
                                       os.path.join(BUFFER_DIR, new_name))

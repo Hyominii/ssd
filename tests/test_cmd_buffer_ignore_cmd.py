@@ -79,7 +79,7 @@ def test_04_ignore_write_overwrite(ctx):
     # 버퍼에는 두 개만 남아야 함 (W 21 / W 20-최근)
     assert invoker.num_commands() == 2
     buf = invoker.get_buffer()
-    assert buf[0]._address == 21 and buf[1]._address == 20
+    assert buf[0].address == 21 and buf[1].address == 20
 
     # 실제 파일 이름도 1_W_21_… , 2_W_20_… 이어야 함
     files = set(os.listdir(ssd.BUFFER_DIR))
@@ -109,7 +109,7 @@ def test_05_ignore_erase_supersedes(ctx):
     assert invoker.num_commands() == 1
     cmd = invoker.get_buffer()[0]
     assert isinstance(cmd, ssd.EraseCommand)
-    assert cmd._address == 18 and cmd._size == 5
+    assert cmd.address == 18 and cmd.size == 5
 
     # 파일도 1_E_18_5 하나 + 2~5_empty 네 개
     files = set(os.listdir(ssd.BUFFER_DIR))
@@ -141,7 +141,7 @@ def test_06_merge_erase(ctx):
     assert invoker.num_commands() == 1
     cmd = invoker.get_buffer()[0]
     assert isinstance(cmd, ssd.EraseCommand)
-    assert cmd._address == 0 and cmd._size == 5
+    assert cmd.address == 0 and cmd.size == 5
 
     # 파일도 1_E_0_5 하나 + 2~5_empty 네 개
     files = set(os.listdir(ssd.BUFFER_DIR))
