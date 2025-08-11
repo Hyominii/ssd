@@ -7,6 +7,8 @@ import re
 from abc import ABC, abstractmethod
 from file_handler import SimpleFileHandler, MultilineFileWriter
 
+from policy import ignore_cmd_policy, merge_erase_policy
+
 # ssd.py 파일이 있는 디렉토리 내 (프로젝트 루트) 절대 경로
 _PROJECT_ROOT = Path(__file__).resolve().parent
 BUFFER_DIR = str(_PROJECT_ROOT / "buffer")  # ← 여기만 변경
@@ -294,84 +296,42 @@ class CommandInvoker:
                 cmd.rename_buffer(idx, 'E', cmd.address, cmd.size)
 
     def add_command(self, cmd: Command) -> None:
-        # self.ignore_cmd(cmd) #신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
-
-        # Read 명령은 버퍼에 쌓지 않고 즉시 수행
+        # Read는 즉시 실행
         if isinstance(cmd, ReadCommand):
             cmd.execute()
             return
 
-        self.ignore_cmd(cmd)  # 신규 커맨드 대비해 지울수 있는 기존 커맨드 제거
+        # 1) 정책 적용 - 무효/중복 제거 및 기본 정리
+        make_erase = lambda a, s: EraseCommand(self._ssd, a, s, 0)
 
+        new_queue = ignore_cmd_policy(
+            queue=self._commands,
+            incoming=cmd,
+            WriteCls=WriteCommand,
+            EraseCls=EraseCommand,
+            make_erase=make_erase,
+        )
+
+        self._commands = new_queue
+
+        # 용량 체크(정책 적용 후 길이 기준) - 넘치면 flush
         if len(self._commands) >= MAX_COMMANDS:
             self.flush()
 
+        # 2) Erase면 병합 정책 적용, Write면 그대로 append
         if isinstance(cmd, EraseCommand):
-            merged = self._merge_erase_if_possible(cmd)
-            if merged:
-                self._commands.extend(merged)
-            else:
-                self._commands.append(cmd)
+            self._commands = merge_erase_policy(
+                queue=self._commands,
+                incoming_erase=cmd,
+                EraseCls=EraseCommand,
+                make_erase=make_erase,
+                chunk_size=10,   # 기존 정책 유지
+            )
         else:
             self._commands.append(cmd)
 
+        # 3) 버퍼 파일과 동기화
         self._sync_buffer_files()
-
-    def _merge_erase_if_possible(self, incoming_cmd: EraseCommand) -> list[EraseCommand] | None:
-        # range of the new (incoming) erase request
-        incoming_start_addr = incoming_cmd.address
-        incoming_end_addr = incoming_start_addr + incoming_cmd.size
-
-        # track commands that will be removed because they merge with the incoming one
-        indices_to_remove: list[int] = []
-
-        # running merged range (will expand if we find overlaps/adjacency)
-        merged_start_addr = incoming_start_addr
-        merged_end_addr = incoming_end_addr
-
-        for idx, queued_cmd in enumerate(self._commands):
-            if not isinstance(queued_cmd, EraseCommand):
-                continue
-
-            queued_start_addr = queued_cmd.address
-            queued_end_addr = queued_start_addr + queued_cmd.size
-
-            # overlap or directly adjacent?
-            has_overlap_or_adjacent = (
-                    queued_end_addr == merged_start_addr
-                    or merged_end_addr == queued_start_addr
-                    or (queued_start_addr <= merged_start_addr < queued_end_addr)
-                    or (merged_start_addr <= queued_start_addr < merged_end_addr)
-            )
-
-            if has_overlap_or_adjacent:
-                merged_start_addr = min(merged_start_addr, queued_start_addr)
-                merged_end_addr = max(merged_end_addr, queued_end_addr)
-                indices_to_remove.append(idx)
-
-        # nothing merged → caller should append the incoming command as-is
-        if not indices_to_remove:
-            return None
-
-        # drop all commands that we merged with
-        for idx in reversed(indices_to_remove):
-            del self._commands[idx]
-
-        # create replacement commands (split into chunks ≤ 10 lines each)
-        total_merged_size = merged_end_addr - merged_start_addr
-        replacement_cmds: list[EraseCommand] = []
-        current_addr = merged_start_addr
-        remaining_size = total_merged_size
-
-        while remaining_size > 0:
-            chunk_size = min(10, remaining_size)
-            replacement_cmds.append(
-                EraseCommand(incoming_cmd.ssd, current_addr, chunk_size, 0)
-            )
-            current_addr += chunk_size
-            remaining_size -= chunk_size
-
-        return replacement_cmds
 
     def flush(self):
         for cmd in self._commands:
@@ -403,84 +363,6 @@ class CommandInvoker:
 
     def get_buffer(self):
         return self._commands
-
-    def ignore_cmd(self, new_cmd: Command):
-        """
-        중복·무효 명령 제거 및 Erase 축소
-        ─────────────────────────────────────
-        • Write
-            – 같은 LBA의 이전 Write 제거
-            – 쓰려는 LBA를 포함하는 Erase 가 있으면
-              · LBA가 Erase 시작 ➜ addr+1, size-1
-              · LBA가 Erase 끝   ➜ size-1
-              · size==0 → Erase 제거
-        • Erase
-            – 범위에 포함된 모든 Write 제거
-            – 자신이 완전히 감싸는 이전 Erase 제거
-        """
-
-        def erange(cmd):
-            return range(cmd.address, cmd.address + cmd.size)
-
-        removed = []
-        # ───── Write 추가 시 ─────
-        if isinstance(new_cmd, WriteCommand):
-            w = new_cmd.address
-            for idx, old in enumerate(self._commands):
-                # ① 같은 LBA Write 제거
-                if isinstance(old, WriteCommand) and old.address == w:
-                    removed.append(idx)
-
-                # ② 포함 Erase 축소 / 제거
-                elif isinstance(old, EraseCommand) and w in erange(old):
-                    if w == old.address:  # 앞쪽 잘라내기
-                        old.address += 1
-                        old.size -= 1
-                    elif w == old.address + old.size - 1:  # 뒤쪽 잘라내기
-                        old.size -= 1
-
-                    # 파일명 갱신
-                    if old.size > 0:
-                        slot = old.path.split("_")[0]  # '2'
-                        new_name = f"{slot}_E_{old.address}_{old.size}"
-                        if new_name != old.path:
-                            os.rename(os.path.join(BUFFER_DIR, old.path),
-                                      os.path.join(BUFFER_DIR, new_name))
-                            old.path = new_name
-                    else:
-                        removed.append(idx)
-
-        # ───── Erase 추가 시 ─────
-        elif isinstance(new_cmd, EraseCommand):
-            n_rng = erange(new_cmd)
-            for idx, old in enumerate(self._commands):
-                # ③ 범위에 포함된 Write 제거
-                if isinstance(old, WriteCommand) and old._address in n_rng:
-                    removed.append(idx)
-
-                # ④ 완전히 포함되는 Erase 제거
-                elif isinstance(old, EraseCommand):
-                    o_rng = erange(old)
-                    if o_rng.start >= n_rng.start and o_rng.stop <= n_rng.stop:
-                        removed.append(idx)
-
-        # 실제 제거(뒤에서부터)
-        for i in sorted(removed, reverse=True):
-            self._commands.pop(i)
-
-    # def fast_read(self, lba: int) -> str:
-    #     # 최근 명령어 우선으로 역순 스캔
-    #     for cmd in reversed(self._commands):
-    #         if cmd['type'] == 'W':
-    #             if cmd['lba'] == lba:
-    #                 return cmd['value']  # 최신 쓰기 값
-    #         elif cmd['type'] == 'E':
-    #             start = cmd['start_lba']
-    #             end = start + cmd['size']
-    #             if start <= lba < end:
-    #                 return BLANK_STRING  # 삭제됨
-    #
-    #     return self._ssd._read_from_nand(lba)  # 실제 NAND 읽기로 후퇴
 
     def fast_read(self, lba: int) -> str:
         for cmd in reversed(self._commands):
