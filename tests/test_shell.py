@@ -4,12 +4,14 @@ from pytest_mock import MockerFixture
 from shell import *
 from shell_cmd_checker import COMMAND_DESCRIPTION
 
+
 @pytest.fixture
 def shell_app(mocker):
     ssd_driver = SSDDriver()
     test_shell_app = TestShellApp(ssd_driver)
 
     return test_shell_app
+
 
 @pytest.mark.parametrize("wrong_cmd", ["exi", "rea", "wri", "hel", " ", "0_", "*"])
 def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, wrong_cmd, capsys):
@@ -25,6 +27,7 @@ def test_shell_wrong_cmd(shell_app, mocker: MockerFixture, wrong_cmd, capsys):
     # Assert
     assert 'INVALID COMMAND' in captured.out
 
+
 @pytest.mark.parametrize("wrong_cmd_args", ["write", "read 1 2", "fullwrite", "fullread 0000", "exit 3", "help -", \
                                             "1_ 02", "2_ s", "2_ a", "4_ *", "flush 0"])
 def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, wrong_cmd_args, capsys):
@@ -39,6 +42,7 @@ def test_shell_wrong_cmd_args(shell_app, mocker: MockerFixture, wrong_cmd_args, 
 
     # Assert
     assert 'INVALID COMMAND' in captured.out
+
 
 def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -56,6 +60,7 @@ def test_shell_cmd_exit_success(shell_app, mocker: MockerFixture, capsys):
     assert e.value.code == 0
     assert 'INVALID COMMAND' not in captured.out
 
+
 def test_shell_cmd_help_success(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["help"]
@@ -70,6 +75,7 @@ def test_shell_cmd_help_success(shell_app, mocker: MockerFixture, capsys):
     assert 'INVALID COMMAND' not in captured.out
     for line in COMMAND_DESCRIPTION:
         assert line in captured.out
+
 
 def test_shell_cmd_flush_success(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -90,6 +96,7 @@ def test_shell_cmd_flush_success(shell_app, mocker: MockerFixture, capsys):
         full_buffer_file = os.path.join(f"{ROOT_DIR}/buffer", buffer_file)
         assert os.path.exists(full_buffer_file)
 
+
 def test_shell_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["write 0 0x00000001"]
@@ -103,6 +110,7 @@ def test_shell_write(shell_app, mocker: MockerFixture, capsys):
     # Assert
     assert '[Write] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
+
 
 @pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
 def test_shell_write_test_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
@@ -119,7 +127,9 @@ def test_shell_write_test_valid_address(shell_app, valid_address, mocker: Mocker
     assert '[Write] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
 
-@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
+
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff",
+                                         "0x00000000000000000001"])
 def test_shell_write_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"write 00 {valid_value}"]
@@ -133,6 +143,7 @@ def test_shell_write_valid_value(shell_app, valid_value, mocker: MockerFixture, 
     # Assert
     assert '[Write] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
+
 
 @pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
 def test_shell_write_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
@@ -149,7 +160,9 @@ def test_shell_write_wrong_address(shell_app, wrong_address, mocker: MockerFixtu
     assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
-@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
+
+@pytest.mark.parametrize("wrong_value",
+                         ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"write 00 {wrong_value}"]
@@ -163,6 +176,7 @@ def test_shell_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, 
     # Assert
     assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
+
 
 def test_shell_read(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -178,6 +192,7 @@ def test_shell_read(shell_app, mocker: MockerFixture, capsys):
     assert '[Write] Done' in captured.out
     assert '[Read] LBA 00 : 0x00000000' in captured.out
     assert 'INVALID COMMAND' not in captured.out
+
 
 @pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
 def test_shell_read_test_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
@@ -195,7 +210,9 @@ def test_shell_read_test_valid_address(shell_app, valid_address, mocker: MockerF
     assert f'[Read] LBA {int(valid_address):02} : 0x00000001' in captured.out
     assert 'INVALID COMMAND' not in captured.out
 
-@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
+
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff",
+                                         "0x00000000000000000001"])
 def test_shell_read_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"write 00 {valid_value}", f"read 00"]
@@ -212,6 +229,7 @@ def test_shell_read_valid_value(shell_app, valid_value, mocker: MockerFixture, c
     assert f'[Read] LBA 00 : 0x{int_value:08X}' in captured.out
     assert 'INVALID COMMAND' not in captured.out
 
+
 @pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
 def test_shell_read_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
     # Arrange
@@ -227,7 +245,9 @@ def test_shell_read_wrong_address(shell_app, wrong_address, mocker: MockerFixtur
     assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
-@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
+
+@pytest.mark.parametrize("wrong_value",
+                         ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_read_after_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"write 00 {wrong_value}", f"read 00"]
@@ -242,6 +262,7 @@ def test_shell_read_after_write_wrong_value(shell_app, wrong_value, mocker: Mock
     assert '[Write] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
+
 def test_shell_erase(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["erase 0 1"]
@@ -255,6 +276,7 @@ def test_shell_erase(shell_app, mocker: MockerFixture, capsys):
     # Assert
     assert '[Erase] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
+
 
 @pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
 def test_shell_erase_with_valid_address(shell_app, valid_address, mocker: MockerFixture, capsys):
@@ -271,6 +293,7 @@ def test_shell_erase_with_valid_address(shell_app, valid_address, mocker: Mocker
     assert '[Erase] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
 
+
 @pytest.mark.parametrize("wrong_address", ["-1", "100", "hello", "0.5", "-0.5", "123", ";", " ", "0x00"])
 def test_shell_erase_with_wrong_address(shell_app, wrong_address, mocker: MockerFixture, capsys):
     # Arrange
@@ -285,6 +308,7 @@ def test_shell_erase_with_wrong_address(shell_app, wrong_address, mocker: Mocker
     # Assert
     assert '[Erase] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
+
 
 @pytest.mark.skip
 @pytest.mark.parametrize("valid_address", [str(x) for x in range(100)])
@@ -303,6 +327,7 @@ def test_shell_erase_with_valid_size(shell_app, valid_address, valid_size, mocke
     assert '[Erase] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
 
+
 @pytest.mark.parametrize("invalid_size", ["0.5", "-1.5", "0xa", "-0x1", "0xF", "-", " ", "null", "A"])
 def test_shell_erase_with_invalid_size(shell_app, invalid_size, mocker: MockerFixture, capsys):
     # Arrange
@@ -318,6 +343,7 @@ def test_shell_erase_with_invalid_size(shell_app, invalid_size, mocker: MockerFi
     assert '[Erase] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
+
 def test_shell_erase_range(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["erase_range 0 1", "erase_range 1 0"]
@@ -331,6 +357,7 @@ def test_shell_erase_range(shell_app, mocker: MockerFixture, capsys):
     # Assert
     assert '[Erase_range] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
+
 
 @pytest.mark.parametrize("valid_range", [("0", "0"), ("99", "99"), ("0", "99"), ("99", "0")])
 def test_shell_erase_range_with_valid_range(shell_app, valid_range, mocker: MockerFixture, capsys):
@@ -347,8 +374,9 @@ def test_shell_erase_range_with_valid_range(shell_app, valid_range, mocker: Mock
     assert '[Erase_range] Done' in captured.out
     assert 'INVALID COMMAND' not in captured.out
 
+
 @pytest.mark.parametrize("invalid_range", [("-1", "10"), ("1", "100"), ("1.5", "10"), ("10", "10.5")
-                                           , ("a", "10.5"), ("10", ".5")])
+    , ("a", "10.5"), ("10", ".5")])
 def test_shell_erase_range_invalid_range(shell_app, invalid_range, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"erase_range {invalid_range[0]} {invalid_range[1]}"]
@@ -363,6 +391,7 @@ def test_shell_erase_range_invalid_range(shell_app, invalid_range, mocker: Mocke
     assert '[Erase_range] Done' not in captured.out
     assert 'INVALID COMMAND' in captured.out
 
+
 def test_shell_cmd_fullwrite(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["fullwrite 0x00000001"]
@@ -376,6 +405,7 @@ def test_shell_cmd_fullwrite(shell_app, mocker: MockerFixture, capsys):
     # Assert
     assert 'INVALID COMMAND' not in captured.out
 
+
 def test_shell_cmd_fullread(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = ["fullwrite 0x00000001", "fullread"]
@@ -391,8 +421,10 @@ def test_shell_cmd_fullread(shell_app, mocker: MockerFixture, capsys):
     for address in range(100):
         assert f'[Read] LBA {address:02} : 0x00000001' in captured.out
 
+
 @pytest.mark.skip
-@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff", "0x00000000000000000001"])
+@pytest.mark.parametrize("valid_value", ["0xa", "0xab", "0xabc", "0xabcd", "0xabcde", "0xabcdef", "0xabcdeff",
+                                         "0x00000000000000000001"])
 def test_shell_cmd_fullwrite_with_valid_value(shell_app, valid_value, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"fullwrite {valid_value}"]
@@ -406,7 +438,9 @@ def test_shell_cmd_fullwrite_with_valid_value(shell_app, valid_value, mocker: Mo
     # Assert
     assert 'INVALID COMMAND' not in captured.out
 
-@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
+
+@pytest.mark.parametrize("wrong_value",
+                         ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_cmd_fullwrite_with_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"fullwrite {wrong_value}"]
@@ -420,23 +454,10 @@ def test_shell_cmd_fullwrite_with_wrong_value(shell_app, wrong_value, mocker: Mo
     # Assert
     assert 'INVALID COMMAND' in captured.out
 
-def test_shell_cmd_fullread(shell_app, mocker: MockerFixture, capsys):
-    # Arrange
-    cmd = ["fullwrite 0x00000001", "fullread"]
-    cmd_len = len(cmd)
-    mocker.patch("builtins.input", side_effect=cmd)
-
-    # Act
-    ret = shell_app.run_shell(cmd_len)
-    captured = capsys.readouterr()
-
-    # Assert
-    assert 'INVALID COMMAND' not in captured.out
-    for address in range(100):
-        assert f'[Read] LBA {address:02} : 0x00000001' in captured.out
 
 @pytest.mark.skip
-@pytest.mark.parametrize("wrong_value", ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
+@pytest.mark.parametrize("wrong_value",
+                         ["AA", "0xHELLO", "ox11", "0xaaaaaaaaaa", "-0xa", "1234", ";", " ", "0xA00000000000000001"])
 def test_shell_cmd_fullread_after_write_wrong_value(shell_app, wrong_value, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"fullwrite 0x00000001", f"fullwrite {wrong_value}", "fullread"]
@@ -451,6 +472,7 @@ def test_shell_cmd_fullread_after_write_wrong_value(shell_app, wrong_value, mock
     assert 'INVALID COMMAND' in captured.out
     for address in range(100):
         assert f'[Read] LBA {address:02} : 0x00000001' in captured.out
+
 
 def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, capsys):
     # Arrange
@@ -468,6 +490,7 @@ def test_shell_full_write_and_read_compare(shell_app, mocker: MockerFixture, cap
     for address in range(100):
         assert f'[Read] LBA {address:02} : 0x12345678' in captured.out
 
+
 def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     # Arrange
     cmd = [f"2_PartialLBAWrite", f"2_"]
@@ -482,7 +505,8 @@ def test_shell_partial_lba_write(shell_app, mocker: MockerFixture, capsys):
     assert 'INVALID COMMAND' not in captured.out
     assert 'Pass' in captured.out
     for address in range(5):
-        assert f'[Read] LBA {address:02} : 0x12345678' in captured.out #ToDo: check iterations are 30
+        assert f'[Read] LBA {address:02} : 0x12345678' in captured.out  # ToDo: check iterations are 30
+
 
 @pytest.mark.skip
 def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, capsys):
@@ -498,7 +522,8 @@ def test_shell_write_read_aging_with_real(shell_app, mocker: MockerFixture, caps
     # Assert
     assert 'INVALID COMMAND' not in captured.out
     assert 'Pass' in captured.out
-    #ToDo: check read value
+    # ToDo: check read value
+
 
 @pytest.mark.skip
 def test_shell_erase_write_aging(shell_app, mocker: MockerFixture, capsys):
@@ -514,7 +539,8 @@ def test_shell_erase_write_aging(shell_app, mocker: MockerFixture, capsys):
     # Assert
     assert 'INVALID COMMAND' not in captured.out
     assert 'Pass' in captured.out
-    #ToDo: check read value
+    # ToDo: check read value
+
 
 @pytest.mark.skip
 @pytest.mark.parametrize("valid_cmd", ["1_", "2_", "3_", "4_", "1_FullWriteAndReadCompare",
@@ -537,8 +563,9 @@ def test_shell_runner_with_testfile_valid_cmd(shell_app, valid_cmd, mocker: Mock
     test_case = valid_cmd[:2]
     assert f"{test_case}  ___  RUN...Pass" in capsys.readouterr().out
 
+
 @pytest.mark.parametrize("invalid_cmd", ["1_2", "he", " ", "None", "-",
-                                       "0_", "5_", "-1_"])
+                                         "0_", "5_", "-1_"])
 def test_shell_runner_with_testfile_incorrect_cmd(shell_app, invalid_cmd, mocker: MockerFixture, capsys):
     # Arrange
     shell_app = TestShellApp()
@@ -556,6 +583,7 @@ def test_shell_runner_with_testfile_incorrect_cmd(shell_app, invalid_cmd, mocker
 
     # Assert
     assert "INVALID COMMAND" in capsys.readouterr().out
+
 
 @pytest.mark.parametrize("invalid_file", [" ", f"{ROOT_DIR}\shell_scripts_.txt", f"shell_scripts.txt"])
 def test_shell_runner_with_invalid_testfile(shell_app, invalid_file, mocker: MockerFixture, capsys):
