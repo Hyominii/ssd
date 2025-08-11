@@ -3,11 +3,7 @@ import shutil
 import pytest
 
 from ssd import SSD, CommandInvoker, WriteCommand, EraseCommand, BLANK_STRING
-
-dir_buffer = "C:/tmp_yp/ssd/buffer"
-file_nand = "C:/tmp_y/ssd/ssd_nand.txt"
-file_output = "C:/tmp_yp/ssd/ssd_output.txt"
-
+from ssd import BUFFER_DIR, OUTPUT_FILE, TARGET_FILE
 
 @pytest.fixture(scope="session")
 def ctx():
@@ -22,9 +18,9 @@ def ctx():
     #     if os.path.exists(f):
     #         os.remove(f)
 
-    if os.path.isdir(dir_buffer):
-        shutil.rmtree(dir_buffer)
-    for f in (file_nand, file_output):
+    if os.path.isdir(BUFFER_DIR):
+        shutil.rmtree(BUFFER_DIR)
+    for f in (TARGET_FILE, OUTPUT_FILE):
         if os.path.exists(f):
             os.remove(f)
 
