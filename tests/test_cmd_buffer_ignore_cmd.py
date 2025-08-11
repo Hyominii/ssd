@@ -2,6 +2,7 @@ import os
 import shutil
 import pytest
 import ssd
+from ssd import EraseCommand, WriteCommand
 
 
 # ───────────────────────── 세션 단위 초기화 ──────────────────────────
@@ -152,6 +153,7 @@ def test_06_merge_erase(ctx):
         "5_empty",
     }
 
+
 def test_07_ignore_erase(ctx):
     ssd_inst, invoker = ctx
     invoker.flush()
@@ -178,6 +180,7 @@ def test_07_ignore_erase(ctx):
         "4_empty",
         "5_empty",
     }
+
 
 def test_my1(ctx):
     ssd_inst, invoker = ctx
@@ -331,3 +334,466 @@ def test_my6(ctx):
     assert "1_W_10_0x0000000a" in files
     assert "2_W_11_0x0000000b" in files
     assert "3_E_12_2" in files
+
+
+@pytest.mark.parametrize("input", [
+    {
+        "original": {
+            "1": "1_W_0_0x00000000",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "W_1_0x00000001",
+        "changed": [
+            "1_W_0_0x00000000",
+            "2_W_1_0x00000001",
+            "3_empty",
+            "4_empty",
+            "5_empty",
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_1",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "W_1_0x00000001",
+        "changed": [
+            "1_E_0_1",
+            "2_W_1_0x00000001",
+            "3_empty",
+            "4_empty",
+            "5_empty",
+        ],
+    }
+])
+def test_08_pass_ignore_write(ctx, input):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # 기존 입력
+    for num in input["original"]:
+        if "empty" in input["original"][num]:
+            continue
+        _, cmd, addr, value = input["original"][num].split("_")
+        if cmd == "W":
+            invoker.add_command(WriteCommand(ssd_inst, addr, value, num))
+        elif cmd == "E":
+            invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value), num))
+
+    # 새로운 입력
+    cmd, addr, value = input["new_input"].split("_")
+    if cmd == "W":
+        invoker.add_command(WriteCommand(ssd_inst, int(addr), value, invoker.num_commands() + 1))
+    elif cmd == "E":
+        invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value), invoker.num_commands() + 1))
+
+    expected_num_commands = 0
+    for i in input["changed"]:
+        if "empty" not in i:
+            expected_num_commands += 1
+
+    assert invoker.num_commands() == expected_num_commands
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == set(input["changed"])
+
+
+@pytest.mark.parametrize("input", [
+    {
+        "original": {
+            "1": "1_W_0_0x00000000",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "W_0_0x00000001",
+        "changed": [
+            "1_W_0_0x00000001",
+            "2_empty",
+            "3_empty",
+            "4_empty",
+            "5_empty",
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_1",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "W_0_0x00000001",
+        "changed": [
+            "1_W_0_0x00000001",
+            "2_empty",
+            "3_empty",
+            "4_empty",
+            "5_empty",
+        ],
+    }
+])
+def test_09_ignore_write(ctx, input):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # 기존 입력
+    for num in input["original"]:
+        if "empty" in input["original"][num]:
+            continue
+        _, cmd, addr, value = input["original"][num].split("_")
+        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+
+    # 새로운 입력
+    cmd, addr, value = input["new_input"].split("_")
+    add_command_by_signature(addr, cmd, invoker, invoker.num_commands() + 1, ssd_inst, value)
+
+    expected_num_commands = 0
+    for i in input["changed"]:
+        if "empty" not in i:
+            expected_num_commands += 1
+
+    assert invoker.num_commands() == expected_num_commands
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == set(input["changed"])
+
+
+def add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value):
+    if cmd == "W":
+        invoker.add_command(WriteCommand(ssd_inst, int(addr), value, num))
+    elif cmd == "E":
+        invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value), num))
+
+
+@pytest.mark.parametrize("input", [
+    {
+        "original": {
+            "1": "1_W_0_0x00000005",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_1_3",
+        "changed": [
+            "1_W_0_0x00000005",
+            "2_E_1_3",
+            "3_empty",
+            "4_empty",
+            "5_empty",
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_2",
+            "2": "2_W_5_0x00001234",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_6_3",
+        "changed": [
+            "1_E_0_2",
+            "2_W_5_0x00001234",
+            "3_E_6_3",
+            "4_empty",
+            "5_empty",
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_2",
+            "2": "2_W_0_0x00001234",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_3_3",
+        "changed": [
+            "1_E_1_1",
+            "2_W_0_0x00001234",
+            "3_E_3_3",
+            "4_empty",
+            "5_empty"
+        ],
+    },
+])
+def test_10_pass_ignore_command_erase(ctx, input):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # 기존 입력
+    for num in input["original"]:
+        if "empty" in input["original"][num]:
+            continue
+        _, cmd, addr, value = input["original"][num].split("_")
+        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+
+    # 새로운 입력
+    cmd, addr, value = input["new_input"].split("_")
+    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+
+    expected_num_commands = 0
+    for i in input["changed"]:
+        if "empty" not in i:
+            expected_num_commands += 1
+
+    assert invoker.num_commands() == expected_num_commands
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == set(input["changed"])
+
+
+@pytest.mark.parametrize("input", [
+    {
+        "original": {
+            "1": "1_W_0_0x00000005",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_0_3",
+        "changed": [
+            "1_E_0_3", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_2",
+            "2": "2_W_5_0x00001234",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_0_3",
+        "changed": [
+            "1_W_5_0x00001234", "2_E_0_3", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_2",
+            "2": "2_W_0_0x00001234",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_0_3",
+        "changed": [
+            "1_E_0_3", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+])
+def test_11_ignore_command_erase(ctx, input):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # 기존 입력
+    for num in input["original"]:
+        if "empty" in input["original"][num]:
+            continue
+        _, cmd, addr, value = input["original"][num].split("_")
+        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+
+    # 새로운 입력
+    cmd, addr, value = input["new_input"].split("_")
+    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+
+    expected_num_commands = 0
+    for i in input["changed"]:
+        if "empty" not in i:
+            expected_num_commands += 1
+
+    assert invoker.num_commands() == expected_num_commands
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == set(input["changed"])
+
+
+@pytest.mark.parametrize("input", [
+    {
+        "original": {
+            "1": "1_E_0_3",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_4_3",
+        "changed": [
+            "1_E_0_3", "2_E_4_3", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+])
+def test_12_pass_merge_erase(ctx, input):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # 기존 입력
+    for num in input["original"]:
+        if "empty" in input["original"][num]:
+            continue
+        _, cmd, addr, value = input["original"][num].split("_")
+        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+
+    # 새로운 입력
+    cmd, addr, value = input["new_input"].split("_")
+    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+
+    expected_num_commands = 0
+    for i in input["changed"]:
+        if "empty" not in i:
+            expected_num_commands += 1
+
+    assert invoker.num_commands() == expected_num_commands
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == set(input["changed"])
+
+
+@pytest.mark.parametrize("input", [
+    {
+        "original": {
+            "1": "1_E_0_0",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_0_3",
+        "changed": [
+            "1_E_0_3", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_1",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_0_3",
+        "changed": [
+            "1_E_0_3", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_3",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_0_3",
+        "changed": [
+            "1_E_0_3", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_5",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_0_3",
+        "changed": [
+            "1_E_0_5", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_5",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_4_3",
+        "changed": [
+            "1_E_0_7", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_5",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_5_3",
+        "changed": [
+            "1_E_0_8", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_5",
+            "2": "2_W_5_0x00001234",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_5_3",
+        "changed": [
+            "1_E_0_8", "2_empty", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_5",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_4_10",
+        "changed": [
+            "1_E_0_10", "2_E_10_4", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+    {
+        "original": {
+            "1": "1_E_0_5",
+            "2": "2_empty",
+            "3": "3_empty",
+            "4": "4_empty",
+            "5": "5_empty",
+        },
+        "new_input": "E_5_10",
+        "changed": [
+            "1_E_0_10", "2_E_10_5", "3_empty", "4_empty", "5_empty"
+        ],
+    },
+])
+def test_13_merge_erase(ctx, input):
+    ssd_inst, invoker = ctx
+    invoker.flush()
+
+    # 기존 입력
+    for num in input["original"]:
+        if "empty" in input["original"][num]:
+            continue
+        _, cmd, addr, value = input["original"][num].split("_")
+        add_command_by_signature(addr, cmd, invoker, num, ssd_inst, value)
+
+    # 새로운 입력
+    cmd, addr, value = input["new_input"].split("_")
+    add_command_by_signature(int(addr), cmd, invoker, invoker.num_commands() + 1, ssd_inst, int(value))
+
+    expected_num_commands = 0
+    for i in input["changed"]:
+        if "empty" not in i:
+            expected_num_commands += 1
+
+    assert invoker.num_commands() == expected_num_commands
+    files = set(os.listdir(ssd.BUFFER_DIR))
+    assert files == set(input["changed"])
