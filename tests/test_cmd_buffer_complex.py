@@ -181,7 +181,7 @@ def test_07_ignore_erase(ctx):
     }
 
 
-def test_my1(ctx):
+def test_08_merge_overlapping_erases_split_into_chunks(ctx):
     ssd_inst, invoker = ctx
     invoker.flush()
 
@@ -209,7 +209,7 @@ def test_my1(ctx):
     assert "2_E_30_5" in files
 
 
-def test_my2(ctx):
+def test_09_multiple_erase_merge_chunk_preserves_write30(ctx):
     ssd_inst, invoker = ctx
     invoker.flush()
 
@@ -239,7 +239,7 @@ def test_my2(ctx):
     assert "4_E_20_4" in files
 
 
-def test_my3(ctx):
+def test_10_multiple_erase_merge_chunk_preserves_write30_repeat(ctx):
     ssd_inst, invoker = ctx
     invoker.flush()
 
@@ -269,7 +269,7 @@ def test_my3(ctx):
     assert "4_E_20_4" in files
 
 
-def test_my4(ctx):
+def test_11_erase_supersedes_prior_writes_in_range_repeat(ctx):
     ssd_inst, invoker = ctx
     invoker.flush()
 
@@ -290,7 +290,7 @@ def test_my4(ctx):
     assert "1_E_0_3" in files
 
 
-def test_my5(ctx):
+def test_12_erase_supersedes_prior_writes_in_range_repeat(ctx):
     ssd_inst, invoker = ctx
     invoker.flush()
 
@@ -311,7 +311,7 @@ def test_my5(ctx):
     assert "1_E_0_3" in files
 
 
-def test_my6(ctx):
+def test_13_write_trims_erase_and_merges_followup(ctx):
     ssd_inst, invoker = ctx
     invoker.flush()
 
@@ -370,11 +370,10 @@ def test_my6(ctx):
         ],
     }
 ])
-def test_08_pass_ignore_write(ctx, input):
+def test_14_pass_ignore_write(ctx, input):
     ssd_inst, invoker = ctx
     invoker.flush()
 
-    # 기존 입력
     for num in input["original"]:
         if "empty" in input["original"][num]:
             continue
@@ -384,7 +383,6 @@ def test_08_pass_ignore_write(ctx, input):
         elif cmd == "E":
             invoker.add_command(EraseCommand(ssd_inst, int(addr), int(value)))
 
-    # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
     if cmd == "W":
         invoker.add_command(WriteCommand(ssd_inst, int(addr), value))
@@ -437,18 +435,16 @@ def test_08_pass_ignore_write(ctx, input):
         ],
     }
 ])
-def test_09_ignore_write(ctx, input):
+def test_15_ignore_write(ctx, input):
     ssd_inst, invoker = ctx
     invoker.flush()
 
-    # 기존 입력
     for num in input["original"]:
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
         add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
-    # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
     add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
@@ -522,18 +518,16 @@ def add_command_by_signature(addr, cmd, invoker, ssd_inst, value):
         ],
     },
 ])
-def test_10_pass_ignore_command_erase(ctx, input):
+def test_16_pass_ignore_command_erase(ctx, input):
     ssd_inst, invoker = ctx
     invoker.flush()
 
-    # 기존 입력
     for num in input["original"]:
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
         add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
-    # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
     add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 
@@ -588,18 +582,16 @@ def test_10_pass_ignore_command_erase(ctx, input):
         ],
     },
 ])
-def test_11_ignore_command_erase(ctx, input):
+def test_17_ignore_command_erase(ctx, input):
     ssd_inst, invoker = ctx
     invoker.flush()
 
-    # 기존 입력
     for num in input["original"]:
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
         add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
-    # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
     add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 
@@ -628,18 +620,16 @@ def test_11_ignore_command_erase(ctx, input):
         ],
     },
 ])
-def test_12_pass_merge_erase(ctx, input):
+def test_18_pass_merge_erase(ctx, input):
     ssd_inst, invoker = ctx
     invoker.flush()
 
-    # 기존 입력
     for num in input["original"]:
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
         add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
-    # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
     add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 
@@ -772,18 +762,16 @@ def test_12_pass_merge_erase(ctx, input):
         ],
     },
 ])
-def test_13_merge_erase(ctx, input):
+def test_19_merge_erase(ctx, input):
     ssd_inst, invoker = ctx
     invoker.flush()
 
-    # 기존 입력
     for num in input["original"]:
         if "empty" in input["original"][num]:
             continue
         _, cmd, addr, value = input["original"][num].split("_")
         add_command_by_signature(addr, cmd, invoker, ssd_inst, value)
 
-    # 새로운 입력
     cmd, addr, value = input["new_input"].split("_")
     add_command_by_signature(int(addr), cmd, invoker, ssd_inst, int(value))
 

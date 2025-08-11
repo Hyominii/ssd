@@ -1,7 +1,6 @@
 import re
 from typing import Optional, Union
 
-# 0x######## (대/소문자 모두 허용)
 HEX_RE = re.compile(r'^(0x|0X)[0-9A-Fa-f]{8}$')
 _INT_RE = re.compile(r'^[+-]?\d+$')
 
